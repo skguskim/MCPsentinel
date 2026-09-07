@@ -1,0 +1,11 @@
+node_modules
+.next
+pnpm-lock.yaml
+data
+tmp
+packages/contracts/artifacts
+packages/contracts/cache
+packages/contracts/deployments
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
+next-env.d.ts

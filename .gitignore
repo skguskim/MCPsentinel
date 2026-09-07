@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.*
+!.env.example
+data/
+tmp/
+packages/contracts/artifacts/
+packages/contracts/cache/
+packages/contracts/deployments/*.json
+*.log
+.DS_Store

@@ -1,0 +1,28 @@
+{
+  "name": "@mcpsentinel/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat build",
+    "build": "hardhat build",
+    "typecheck": "hardhat build && tsc --noEmit",
+    "test": "hardhat test",
+    "node": "hardhat node --network hardhatMainnet --hostname 127.0.0.1",
+    "deploy": "hardhat build && tsx scripts/deploy.ts",
+    "seed": "tsx scripts/seed.ts",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@mcpsentinel/shared": "workspace:*",
+    "@openzeppelin/contracts": "^5.4.0",
+    "viem": "^2.37.3"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
+    "@types/node": "^24.0.0",
+    "hardhat": "3.15.0",
+    "tsx": "^4.20.5",
+    "typescript": "~5.9.2"
+  }
+}
