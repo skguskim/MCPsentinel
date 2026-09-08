@@ -170,7 +170,7 @@ export class Gateway {
       let registry = null;
       let registryError: string | undefined;
       try {
-        registry = await this.registry.get(run.toolId);
+        registry = await this.registry.get(manifest);
       } catch {
         registryError = "Registry 조회에 실패했습니다.";
       }

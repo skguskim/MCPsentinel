@@ -70,6 +70,46 @@ test("real MCP HTTP gateway: execution, review, block, persistence and origin bo
       assert.equal(await count(), 1);
     });
     await t.test(
+      "tool listing serializes registry revisions without losing the publisher",
+      async () => {
+        const { status, data } = await request("/api/tools");
+        assert.equal(status, 200);
+        assert.equal(data.tools.length, 2);
+        assert.equal(data.tools[0].revision, "1");
+        assert.equal(
+          data.tools[0].publisher,
+          createDemoManifests(config.endpoint)[0].publisher,
+        );
+      },
+    );
+    await t.test(
+      "same-name tool from an unregistered publisher is blocked before execution",
+      async () => {
+        const before = await count();
+        const originalPublisher = config.publisher;
+        try {
+          config.publisher = "0x0000000000000000000000000000000000000001";
+          const { data } = await exchange();
+          assert.equal(data.run.status, "blocked");
+          assert.equal(
+            data.run.checks.find(
+              (check: { key: string }) => check.key === "registry_available",
+            )?.passed,
+            true,
+          );
+          assert.equal(
+            data.run.checks.find(
+              (check: { key: string }) => check.key === "registered",
+            )?.passed,
+            false,
+          );
+          assert.equal(await count(), before);
+        } finally {
+          config.publisher = originalPublisher;
+        }
+      },
+    );
+    await t.test(
       "REVIEW does not execute until approval; concurrent approval executes exactly once",
       async () => {
         const before = await count();

@@ -9,7 +9,14 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import hre from "hardhat";
-import { encodeErrorResult, getAddress, parseAbi, type Hex } from "viem";
+import {
+  encodeErrorResult,
+  getAddress,
+  parseAbi,
+  toFunctionSelector,
+  type Hex,
+  type Address,
+} from "viem";
 import {
   hashManifest,
   hashPermissions,
@@ -42,11 +49,14 @@ const rpc = createServer(async (req, res) => {
     return;
   }
   try {
-    if (message.method === "eth_call" && fault === "revert") {
+    const isToolLookup =
+      message.method === "eth_call" &&
+      message.params[0].data.startsWith(toFunctionSelector("getTool(bytes32)"));
+    if (isToolLookup && fault === "revert") {
       throw { code: 3, message: "execution reverted", data: revertData };
     }
     const result =
-      message.method === "eth_call" && fault === "malformed"
+      isToolLookup && fault === "malformed"
         ? "0x01"
         : await connection.provider.request({
             method: message.method,
@@ -100,7 +110,7 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
   await t.test(
     "missing ToolNotFound returns null and records healthy registry with unregistered BLOCK",
     async () => {
-      const record = await adapter.get(manifest.toolId);
+      const record = await adapter.get(manifest);
       assert.equal(record, null);
       const result = verify(record);
       assert.equal(result.decision, "BLOCK");
@@ -118,16 +128,17 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
   await t.test(
     "registered and approved metadata still returns ALLOW",
     async () => {
-      const id = hashToolId(manifest.toolId);
+      const id = hashToolId(manifest.publisher, manifest.toolId);
       await registry.write.registerTool([
-        id,
+        manifest.toolId,
         manifest.version,
         hashManifest(manifest),
         hashPermissions(manifest.permissions),
       ]);
-      await registry.write.approveVersion([id, manifest.version]);
-      const record = await adapter.get(manifest.toolId);
+      await registry.write.approveVersion([id, manifest.version, 1n]);
+      const record = await adapter.get(manifest);
       assert.equal(record?.exists, true);
+      assert.equal(record?.revision, "2");
       assert.equal(verify(record).decision, "ALLOW");
     },
   );
@@ -145,7 +156,7 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
         ],
       ] as const) {
         await assert.rejects(invalid.validateConnection(), pattern);
-        await assert.rejects(invalid.get(manifest.toolId), pattern);
+        await assert.rejects(invalid.get(manifest), pattern);
       }
     },
   );
@@ -154,7 +165,7 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
     async () => {
       fault = "outage";
       try {
-        await assert.rejects(adapter.get(manifest.toolId), (error: Error) => {
+        await assert.rejects(adapter.get(manifest), (error: Error) => {
           const result = verify(null, error.message);
           assert.equal(result.decision, "BLOCK");
           assert.equal(
@@ -174,7 +185,7 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
     async () => {
       try {
         fault = "malformed";
-        await assert.rejects(adapter.get(manifest.toolId));
+        await assert.rejects(adapter.get(manifest));
         fault = "revert";
         for (const data of [
           encodeErrorResult({
@@ -185,19 +196,81 @@ test("R3: on-chain lookup distinguishes missing tools from unavailable registry"
           encodeErrorResult({
             abi: parseAbi(["error ToolNotFound(bytes32 toolId)"]),
             errorName: "ToolNotFound",
-            args: [hashToolId("another-tool")],
+            args: [hashToolId(manifest.publisher, "another-tool")],
           }),
           "0xdeadbeef" as Hex,
         ]) {
           revertData = data;
-          await assert.rejects(adapter.get(manifest.toolId));
+          await assert.rejects(adapter.get(manifest));
         }
       } finally {
         fault = undefined;
       }
-      assert.equal((await adapter.get(manifest.toolId))?.approved, true);
+      assert.equal((await adapter.get(manifest))?.approved, true);
     },
   );
+});
+
+test("R1: adapter resolves the manifest publisher and isolates same-name approval and revocation", async () => {
+  const [, publisher] = await connection.viem.getWalletClients();
+  const registry = await connection.viem.deployContract("ToolRegistry", [
+    admin.account.address,
+  ]);
+  const adapter = new OnchainRegistry(registry.address, rpcUrl, 31337);
+  const trusted = createDemoManifests("http://127.0.0.1:4100/mcp")[0]!;
+  const other = { ...trusted, publisher: publisher.account.address };
+  await registry.write.registerTool(
+    [
+      other.toolId,
+      other.version,
+      hashManifest(other),
+      hashPermissions(other.permissions),
+    ],
+    { account: publisher.account },
+  );
+  const otherId = hashToolId(other.publisher, other.toolId);
+  await registry.write.approveVersion([otherId, other.version, 1n]);
+  assert.equal(
+    await adapter.get(trusted),
+    null,
+    "A different publisher's approval must not satisfy this identity",
+  );
+  assert.equal((await adapter.get(other))?.approved, true);
+  await registry.write.registerTool([
+    trusted.toolId,
+    trusted.version,
+    hashManifest(trusted),
+    hashPermissions(trusted.permissions),
+  ]);
+  const trustedId = hashToolId(trusted.publisher, trusted.toolId);
+  await registry.write.approveVersion([trustedId, trusted.version, 1n]);
+  await registry.write.revokeTool([otherId], { account: publisher.account });
+  assert.equal((await adapter.get(trusted))?.revoked, false);
+  assert.equal((await adapter.get(other))?.revoked, true);
+  await registry.write.restoreVersion([otherId, other.version, 3n]);
+  assert.equal((await adapter.get(other))?.revision, "4");
+  assert.equal((await adapter.get(trusted))?.revision, "2");
+});
+
+test("v2 compatibility rejects code without a version method and older versions", async () => {
+  const address: Address = "0x00000000000000000000000000000000000000a1";
+  const identity = createDemoManifests("http://127.0.0.1:4100/mcp")[0]!;
+  // Minimal isolated test bytecode: always revert, then always return uint256(1).
+  for (const code of ["0x60006000fd", "0x600160005260206000f3"]) {
+    await connection.provider.request({
+      method: "hardhat_setCode",
+      params: [address, code],
+    });
+    const adapter = new OnchainRegistry(address, rpcUrl, 31337);
+    await assert.rejects(
+      adapter.validateConnection(),
+      /v2 compatibility|Unsupported ToolRegistry version/,
+    );
+    await assert.rejects(
+      adapter.get(identity),
+      /v2 compatibility|Unsupported ToolRegistry version/,
+    );
+  }
 });
 
 test("R4: deployment clients validate intended chain before signer creation", async () => {
@@ -337,7 +410,7 @@ test("R4: real deploy/seed entry points share configuration and reject invalid t
     const deployment = readDeployment(config);
     // The freshly deployed registry has no tools, but is a valid connection.
     const adapter = new OnchainRegistry(deployment.address, rpcUrl, 31337);
-    assert.equal(await adapter.get(manifests[0]!.toolId), null);
+    assert.equal(await adapter.get(manifests[0]!), null);
 
     for (const override of [
       { CHAIN_ID: "11155111" },
@@ -366,13 +439,33 @@ test("R4: real deploy/seed entry points share configuration and reject invalid t
     });
     assert.equal(seeded.code, 0, seeded.output);
     for (const manifest of manifests)
-      assert.equal((await adapter.get(manifest.toolId))?.approved, true);
+      assert.equal((await adapter.get(manifest))?.approved, true);
     methods.length = 0;
     const repeated = await run("scripts/seed.ts", {
       REGISTRY_ADDRESS: deployment.address,
     });
     assert.equal(repeated.code, 0, repeated.output);
     noTransactions();
+
+    const smoke = await run("scripts/smoke.ts", {
+      REGISTRY_ADDRESS: deployment.address,
+    });
+    assert.equal(smoke.code, 0, smoke.output);
+    assert.equal((await adapter.get(manifests[0]!))?.revision, "4");
+    const deployedRegistry = await connection.viem.getContractAt(
+      "ToolRegistry",
+      deployment.address,
+    );
+    const id = hashToolId(manifests[0]!.publisher, manifests[0]!.toolId);
+    await deployedRegistry.write.revokeTool([id]);
+    methods.length = 0;
+    const revokedSeed = await run("scripts/seed.ts", {
+      REGISTRY_ADDRESS: deployment.address,
+    });
+    assert.notEqual(revokedSeed.code, 0);
+    assert.match(revokedSeed.output, /seed will not restore/);
+    noTransactions();
+    assert.equal((await adapter.get(manifests[0]!))?.revoked, true);
   } finally {
     manifestServer.closeAllConnections();
     await new Promise<void>((resolve) => manifestServer.close(() => resolve()));

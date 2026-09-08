@@ -18,6 +18,7 @@ assert.equal(
 );
 const deployment = readDeployment(config);
 const registry = new OnchainRegistry(deployment.address, rpcUrl, chainId);
+const identity = (toolId: string) => ({ publisher: account.address, toolId });
 
 async function send(functionName: string, args: unknown[]) {
   await assertExpectedChain(publicClient, chainId);
@@ -34,7 +35,7 @@ async function send(functionName: string, args: unknown[]) {
 }
 
 for (const toolId of ["exchange_rate", "update_report"]) {
-  const record = await registry.get(toolId);
+  const record = await registry.get(identity(toolId));
   assert.equal(record?.exists, true);
   assert.equal(
     record?.approved,
@@ -45,26 +46,31 @@ for (const toolId of ["exchange_rate", "update_report"]) {
   console.log(`OnchainRegistry: ${toolId} is registered and approved.`);
 }
 
-const toolId = hashToolId("exchange_rate");
-const original = await registry.get("exchange_rate");
+const toolId = hashToolId(account.address, "exchange_rate");
+const original = await registry.get(identity("exchange_rate"));
 assert.ok(original);
 let needsRestoration = false;
 try {
   await send("revokeTool", [toolId]);
   needsRestoration = true;
-  const revoked = await registry.get("exchange_rate");
+  const revoked = await registry.get(identity("exchange_rate"));
   assert.equal(revoked?.approved, false);
   assert.equal(revoked?.revoked, true);
+  assert.equal(revoked.revision, String(BigInt(original.revision) + 1n));
   console.log(
     "OnchainRegistry: revocation is visible immediately and approval is invalidated.",
   );
 } finally {
   if (needsRestoration)
-    await send("approveVersion", [toolId, original.version]);
+    await send("restoreVersion", [
+      toolId,
+      original.version,
+      BigInt(original.revision) + 1n,
+    ]);
 }
-const restored = await registry.get("exchange_rate");
+const restored = await registry.get(identity("exchange_rate"));
 assert.equal(restored?.approved, true);
 assert.equal(restored?.revoked, false);
 console.log(
-  "OnchainRegistry: explicit verifier approval restored the tool. Both demo tools remain active.",
+  "OnchainRegistry: explicit revision-bound restoration restored the tool. Both demo tools remain active.",
 );

@@ -1,4 +1,10 @@
-import { keccak256, toHex } from "viem";
+import {
+  encodeAbiParameters,
+  keccak256,
+  toHex,
+  zeroAddress,
+  type Address,
+} from "viem";
 import { z } from "zod";
 
 /** JSON normalization used by both registration and the execution gateway.
@@ -62,7 +68,11 @@ const JsonObjectSchema = z
 const PermissionSchema = z.string().min(1).max(128);
 const AddressSchema = z
   .string()
-  .regex(/^0x[0-9a-fA-F]{40}$/, "Expected an EVM address.");
+  .regex(/^0x[0-9a-fA-F]{40}$/, "Expected an EVM address.")
+  .refine(
+    (value) => value.toLowerCase() !== zeroAddress,
+    "Publisher must not be the zero address.",
+  );
 const HashSchema = z
   .string()
   .regex(/^0x[0-9a-fA-F]{64}$/, "Expected a bytes32 hash.");
@@ -94,6 +104,8 @@ export const ToolManifestSchema = z
   .strict();
 
 export type ToolManifest = z.infer<typeof ToolManifestSchema>;
+/** Human-readable IDs are scoped to the publisher from the validated manifest. */
+export type ToolIdentity = Pick<ToolManifest, "publisher" | "toolId">;
 
 export const RegistryRecordSchema = z.object({
   publisher: AddressSchema,
@@ -103,6 +115,10 @@ export const RegistryRecordSchema = z.object({
   approved: z.boolean(),
   revoked: z.boolean(),
   exists: z.boolean(),
+  // JSON-facing records use decimal strings; raw viem uint256 values are bigint.
+  revision: z
+    .union([z.bigint().positive(), z.string().regex(/^[1-9]\d*$/)])
+    .transform(String),
 });
 export type RegistryRecord = z.infer<typeof RegistryRecordSchema>;
 
@@ -177,8 +193,15 @@ export function hashPermissions(permissions: readonly string[]): `0x${string}` {
   return keccak256(toHex(canonicalJson(normalizePermissions(permissions))));
 }
 
-export function hashToolId(toolId: string): `0x${string}` {
-  return keccak256(toHex(toolId));
+export function hashToolId(publisher: string, toolId: string): `0x${string}` {
+  AddressSchema.parse(publisher);
+  z.string().min(1).parse(toolId);
+  return keccak256(
+    encodeAbiParameters(
+      [{ type: "address" }, { type: "string" }],
+      [publisher.toLowerCase() as Address, toolId],
+    ),
+  );
 }
 
 export interface VerifyToolInput {

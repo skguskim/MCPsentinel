@@ -165,11 +165,15 @@ const AbiEntrySchema = z.discriminatedUnion("type", [
     })
     .passthrough(),
 ]);
+export const TOOL_REGISTRY_VERSION = 2n;
 export const toolRegistryAbi = parseAbi([
-  "struct Tool { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; }",
+  "struct Tool { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; uint256 revision; }",
+  "function REGISTRY_VERSION() view returns (uint256)",
+  "function computeToolId(address publisher, string toolName) pure returns (bytes32)",
   "function getTool(bytes32 toolId) view returns (Tool)",
-  "function registerTool(bytes32 toolId, string version, bytes32 manifestHash, bytes32 permissionHash)",
-  "function approveVersion(bytes32 toolId, string version)",
+  "function registerTool(string toolName, string version, bytes32 manifestHash, bytes32 permissionHash) returns (bytes32 toolId)",
+  "function approveVersion(bytes32 toolId, string version, uint256 expectedRevision)",
+  "function restoreVersion(bytes32 toolId, string version, uint256 expectedRevision)",
   "function revokeTool(bytes32 toolId)",
   "error ToolNotFound(bytes32 toolId)",
 ]);
@@ -239,7 +243,7 @@ export function readRegistryDeployment(
   const parsed = RegistryDeploymentSchema.safeParse(input);
   if (!parsed.success)
     throw new Error(
-      `Invalid Registry deployment file (address, chainId or ABI): ${path}`,
+      `Invalid Registry deployment file (address, chainId or ABI): ${path}. Registry v2 requires redeployment; regenerate the deployment file.`,
     );
   if (parsed.data.chainId !== expectedChainId) {
     throw new Error(
@@ -282,7 +286,7 @@ export async function assertExpectedChain(
 }
 
 export async function assertRegistryContract(
-  client: Pick<PublicClient, "getChainId" | "getCode">,
+  client: Pick<PublicClient, "getChainId" | "getCode" | "readContract">,
   address: Address,
   chainId: number,
 ) {
@@ -291,5 +295,22 @@ export async function assertRegistryContract(
   if (!code || code === "0x")
     throw new Error(
       "Registry contract code not found at the configured address. Check deployment and chain settings.",
+    );
+  let version: bigint;
+  try {
+    version = await client.readContract({
+      address,
+      abi: toolRegistryAbi,
+      functionName: "REGISTRY_VERSION",
+    });
+  } catch (cause) {
+    throw new Error(
+      "Cannot verify ToolRegistry v2 compatibility. Check RPC connectivity and redeploy older registries.",
+      { cause },
+    );
+  }
+  if (version !== TOOL_REGISTRY_VERSION)
+    throw new Error(
+      "Unsupported ToolRegistry version. Deploy Registry v2 and update the configured address.",
     );
 }

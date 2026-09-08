@@ -17,12 +17,13 @@ import {
   RegistryRecordSchema,
   type RegistryRecord,
   type ToolManifest,
+  type ToolIdentity,
 } from "@mcpsentinel/shared";
 import type { DemoScenario } from "@mcpsentinel/shared/demo";
 
 export interface Registry {
   mode: "demo" | "onchain";
-  get(toolId: string): Promise<RegistryRecord | null>;
+  get(tool: ToolIdentity): Promise<RegistryRecord | null>;
 }
 export class DemoRegistry implements Registry {
   readonly mode = "demo";
@@ -31,7 +32,7 @@ export class DemoRegistry implements Registry {
   constructor(trusted: ToolManifest[]) {
     this.records = new Map(
       trusted.map((m) => [
-        m.toolId,
+        hashToolId(m.publisher, m.toolId),
         {
           publisher: m.publisher,
           version: m.version,
@@ -40,14 +41,15 @@ export class DemoRegistry implements Registry {
           approved: true,
           revoked: false,
           exists: true,
+          revision: "1",
         },
       ]),
     );
   }
-  async get(toolId: string) {
+  async get(tool: ToolIdentity) {
     if (this.scenario === "registry-unavailable")
       throw new Error("Demo registry outage");
-    const record = this.records.get(toolId);
+    const record = this.records.get(hashToolId(tool.publisher, tool.toolId));
     return record ? { ...record, revoked: this.scenario === "revoked" } : null;
   }
 }
@@ -66,10 +68,10 @@ export class OnchainRegistry implements Registry {
   async validateConnection() {
     await assertRegistryContract(this.client, this.address, this.chainId);
   }
-  async get(toolId: string): Promise<RegistryRecord | null> {
+  async get(tool: ToolIdentity): Promise<RegistryRecord | null> {
     await this.validateConnection();
     // No fallback to demo, cached allow, or trust-on-first-use on RPC failure.
-    const id = hashToolId(toolId);
+    const id = hashToolId(tool.publisher, tool.toolId);
     try {
       return RegistryRecordSchema.parse(
         await this.client.readContract({

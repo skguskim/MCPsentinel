@@ -8,7 +8,7 @@
     "build": "hardhat build",
     "typecheck": "hardhat build && tsc --noEmit",
     "test": "hardhat test",
-    "review": "hardhat test nodejs review/findings.test.ts",
+    "review": "hardhat test nodejs test/ToolRegistrySecurity.ts",
     "node": "hardhat node --network hardhatMainnet --hostname 127.0.0.1",
     "deploy": "hardhat build && tsx scripts/deploy.ts",
     "seed": "tsx scripts/seed.ts",

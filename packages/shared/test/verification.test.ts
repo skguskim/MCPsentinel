@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { keccak256, toHex } from "viem";
+import { encodeAbiParameters, keccak256, toHex, zeroAddress } from "viem";
 import {
   canonicalJson,
   hashManifest,
@@ -10,6 +10,7 @@ import {
   verifyTool,
   type ObservedTool,
   type RegistryRecord,
+  RegistryRecordSchema,
   type ToolManifest,
   type VerificationPolicy,
 } from "../src/index.js";
@@ -47,6 +48,7 @@ function registered(tool: ToolManifest = manifest): RegistryRecord {
     approved: true,
     revoked: false,
     exists: true,
+    revision: "1",
   };
 }
 function verify(overrides: Partial<Parameters<typeof verifyTool>[0]> = {}) {
@@ -85,7 +87,7 @@ test("canonical hashes ignore nested object key order and permission order/dupli
   );
 });
 
-test("ordinary array order is preserved and tool IDs use Ethereum Keccak-256", () => {
+test("ordinary array order is preserved and tool IDs include the publisher using ABI encoding", () => {
   assert.notEqual(
     hashManifest(manifest),
     hashManifest({
@@ -93,8 +95,25 @@ test("ordinary array order is preserved and tool IDs use Ethereum Keccak-256", (
       inputSchema: { ...manifest.inputSchema, required: ["quote", "base"] },
     }),
   );
-  assert.equal(hashToolId("exchange-rate"), keccak256(toHex("exchange-rate")));
-  assert.notEqual(hashToolId("exchange-rate"), hashToolId("Exchange-rate"));
+  assert.equal(
+    hashToolId(manifest.publisher, "exchange-rate"),
+    keccak256(
+      encodeAbiParameters(
+        [{ type: "address" }, { type: "string" }],
+        [manifest.publisher as `0x${string}`, "exchange-rate"],
+      ),
+    ),
+  );
+  assert.notEqual(
+    hashToolId(manifest.publisher, "exchange-rate"),
+    hashToolId(manifest.publisher, "Exchange-rate"),
+  );
+  assert.notEqual(
+    hashToolId(manifest.publisher, "exchange-rate"),
+    hashToolId("0x0000000000000000000000000000000000000001", "exchange-rate"),
+  );
+  assert.throws(() => hashToolId(zeroAddress, "exchange-rate"));
+  assert.throws(() => hashToolId(manifest.publisher, ""));
 });
 
 test("invalid manifests and non-JSON values are rejected", () => {
@@ -185,7 +204,7 @@ test("publisher, approved version, manifest and permission hash changes BLOCK", 
   const mutations: Partial<RegistryRecord>[] = [
     { publisher: "0x0000000000000000000000000000000000000001" },
     { version: "2.0.0" },
-    { manifestHash: hashToolId("tampered") },
+    { manifestHash: keccak256(toHex("tampered")) },
     { permissionHash: hashPermissions(["admin:write"]) },
   ];
   for (const mutation of mutations) {
@@ -205,6 +224,19 @@ test("publisher, approved version, manifest and permission hash changes BLOCK", 
       .decision,
     "BLOCK",
   );
+});
+
+test("registry revisions retain uint256 precision as JSON-safe decimal strings", () => {
+  const revision = (1n << 255n) + 1n;
+  const record = RegistryRecordSchema.parse({ ...registered(), revision });
+  assert.equal(record.revision, revision.toString());
+  assert.doesNotThrow(() => JSON.stringify(record));
+  for (const revision of [0n, -1n, 1, "0", "1.5", undefined]) {
+    assert.equal(
+      RegistryRecordSchema.safeParse({ ...registered(), revision }).success,
+      false,
+    );
+  }
 });
 
 test("MCP discovery must match approved name, description and nested input schema", () => {

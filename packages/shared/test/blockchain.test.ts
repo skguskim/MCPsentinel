@@ -15,10 +15,13 @@ import {
 
 const address = "0x1234567890123456789012345678901234567890";
 const abi = parseAbi([
-  "struct Tool { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; }",
+  "struct Tool { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; uint256 revision; }",
+  "function REGISTRY_VERSION() view returns (uint256)",
+  "function computeToolId(address publisher, string toolName) pure returns (bytes32)",
   "function getTool(bytes32 toolId) view returns (Tool)",
-  "function registerTool(bytes32 toolId, string version, bytes32 manifestHash, bytes32 permissionHash)",
-  "function approveVersion(bytes32 toolId, string version)",
+  "function registerTool(string toolName, string version, bytes32 manifestHash, bytes32 permissionHash) returns (bytes32 toolId)",
+  "function approveVersion(bytes32 toolId, string version, uint256 expectedRevision)",
+  "function restoreVersion(bytes32 toolId, string version, uint256 expectedRevision)",
   "function revokeTool(bytes32 toolId)",
   "error ToolNotFound(bytes32 toolId)",
 ]);
@@ -216,6 +219,27 @@ test("explicit registry address works alone but must agree with an explicit depl
           }),
         ),
       /does not match/,
+    );
+  });
+});
+
+test("v1 deployment ABI is rejected with a redeployment instruction", () => {
+  const legacyAbi = parseAbi([
+    "struct Tool { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; }",
+    "function getTool(bytes32 toolId) view returns (Tool)",
+    "function registerTool(bytes32 toolId, string version, bytes32 manifestHash, bytes32 permissionHash)",
+    "function approveVersion(bytes32 toolId, string version)",
+    "function revokeTool(bytes32 toolId)",
+    "error ToolNotFound(bytes32 toolId)",
+  ]);
+  withFile((path) => {
+    writeFileSync(
+      path,
+      JSON.stringify({ address, chainId: 31337, abi: legacyAbi }),
+    );
+    assert.throws(
+      () => readRegistryDeployment(path, 31337),
+      /Registry v2 requires redeployment/,
     );
   });
 });
