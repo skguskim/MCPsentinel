@@ -1,11 +1,9 @@
 "use client";
 
 import type {
-  Decision,
   Run,
   Tool,
   Scenario,
-  IconName,
 } from "@/types";
 
 import {
@@ -17,6 +15,9 @@ import {
 } from "react";
 
 import { api } from "@/lib/api";
+import { scenarios, statusNames } from "@/lib/constants";
+import { errorText, time } from "@/lib/formats";
+
 import Icon from "@/components/common/Icon";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
@@ -25,47 +26,6 @@ import RequestPanel from "@/components/dashboard/RequestsPanel";
 import VerificationPanel from "@/components/dashboard/VerificationPanel";
 import RunHistory from "@/components/dashboard/RunHistory";
 import ToolRegistry from "@/components/dashboard/ToolRegistry";
-
-const scenarios: { id: Scenario; name: string; description: string }[] = [
-  { id: "normal", name: "정상 Tool", description: "승인된 정보와 일치" },
-  {
-    id: "tampered",
-    name: "Manifest 변조",
-    description: "등록된 해시와 불일치",
-  },
-  { id: "revoked", name: "Tool 폐기", description: "등록 후 사용이 중단됨" },
-  {
-    id: "version-mismatch",
-    name: "미승인 버전",
-    description: "승인 버전과 불일치",
-  },
-  {
-    id: "permission-denied",
-    name: "금지 권한",
-    description: "허용 범위를 벗어난 권한",
-  },
-  {
-    id: "registry-unavailable",
-    name: "Registry 장애",
-    description: "신뢰 기준 조회 불가",
-  },
-];
-const statusNames: Record<Run["status"], string> = {
-  completed: "실행 완료",
-  pending_review: "승인 대기",
-  blocked: "실행 차단",
-  rejected: "승인 거절",
-  failed: "실행 실패",
-};
-const errorText = (error: unknown) =>
-  error instanceof Error ? error.message : "요청 중 오류가 발생했어요.";
-const time = (value: string) =>
-  new Date(value).toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
 
 export default function Dashboard() {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -137,7 +97,7 @@ export default function Dashboard() {
     setSelectedId(run.id);
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!prompt.trim() || busy) return;
     setBusy("run");
@@ -193,8 +153,8 @@ export default function Dashboard() {
   return (
     <div className="app-shell">
       <Sidebar
-      toolsCount={tools.length}
-      connected={connected}
+        toolsCount={tools.length}
+        connected={connected}
       />
       <div className="main-shell">
         <Topbar connected={connected} />
@@ -248,25 +208,25 @@ export default function Dashboard() {
             reviewCount={reviewCount}
           />
           <div className="workbench-grid">
-          <RequestPanel
-            prompt={prompt}
-            setPrompt={setPrompt}
-            scenario={scenario}
-            scenarios={scenarios}
-            busy={busy}
-            connected={connected}
-            registryMode={registryMode}
-            submit={submit}
-            changeScenario={changeScenario}
-          />
-          <VerificationPanel
-            selectedRun={selectedRun}
-            busy={busy}
-            loading={loading}
-            statusNames={statusNames}
-            time={time}
-            review={review}
-          />
+            <RequestPanel
+              prompt={prompt}
+              setPrompt={setPrompt}
+              scenario={scenario}
+              scenarios={scenarios}
+              busy={busy}
+              connected={connected}
+              registryMode={registryMode}
+              submit={submit}
+              changeScenario={changeScenario}
+            />
+            <VerificationPanel
+              selectedRun={selectedRun}
+              busy={busy}
+              loading={loading}
+              statusNames={statusNames}
+              time={time}
+              review={review}
+            />
           </div>
           <RunHistory
             runs={runs}
