@@ -19,6 +19,7 @@ import {
 import { api } from "@/lib/api";
 import Icon from "@/components/common/Icon";
 import Sidebar from "@/components/layout/Sidebar";
+import Topbar from "@/components/layout/Topbar";
 
 const scenarios: { id: Scenario; name: string; description: string }[] = [
   { id: "normal", name: "정상 Tool", description: "승인된 정보와 일치" },
@@ -200,20 +201,7 @@ export default function Dashboard() {
       connected={connected}
       />
       <div className="main-shell">
-        <header className="topbar">
-          <div className="breadcrumb">
-            Workspace <span>/</span> <strong>보안 대시보드</strong>
-          </div>
-          <div className="topbar-right">
-            <span
-              className={`connection-label ${connected ? "is-connected" : ""}`}
-            >
-              <span className="status-dot" />
-              {connected ? "SYSTEM CONNECTED" : "CONNECTING"}
-            </span>
-            <span className="avatar">MS</span>
-          </div>
-        </header>
+        <Topbar connected={connected} />
         <main id="overview">
           <div className="page-heading">
             <div>
