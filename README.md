@@ -60,7 +60,9 @@ pnpm chain:seed
 pnpm --filter @mcpsentinel/contracts smoke
 ```
 
-배포 주소와 ABI는 `packages/contracts/deployments/localhost.json`에 생성됩니다. `smoke`는 로컬 체인에서 폐기·재승인을 실제로 수행하고 두 Tool을 정상 승인 상태로 돌려놓습니다.
+배포 주소와 ABI는 `packages/contracts/deployments/localhost.json`에 생성됩니다. `smoke`는 로컬 체인에서 폐기·명시적 복원을 실제로 수행하고 두 Tool을 정상 승인 상태로 돌려놓습니다.
+
+**이전 v1 계약을 사용 중이면 v2로 재배포·재등록해야 합니다.** Tool ID 계산과 승인·복원 ABI가 바뀌었습니다. 위 배포·시드 순서를 다시 실행하고, `REGISTRY_ADDRESS`를 지정했다면 새 주소로 변경하세요. 자세한 [전환 절차](packages/contracts/README.md#v1에서-v2로-적용하기)를 참고하세요.
 
 이제 앱을 Ctrl+C로 종료한 뒤 루트에 `.env`를 만들고 다음 한 줄을 넣습니다.
 
@@ -68,7 +70,7 @@ pnpm --filter @mcpsentinel/contracts smoke
 REGISTRY_MODE=onchain
 ```
 
-다시 `pnpm dev`로 실행하면 UI에 온체인 모드가 표시되고, 매 검증마다 실제 컨트랙트를 읽습니다. 체인이 꺼졌거나 응답이 잘못되면 실행을 차단하며 데모 Registry로 대체하지 않습니다. 체인을 재시작했으면 다시 배포·시드해야 합니다.
+다시 `pnpm dev`로 실행하면 UI에 온체인 모드가 표시되고, 매 검증마다 실제 컨트랙트를 읽습니다. API 시작 시 체인 ID와 대상 주소의 계약 코드·Registry v2 호환성을 확인합니다. 설정이 잘못되거나 RPC에 연결할 수 없으면 시작을 중단하며, 실행 중 조회 장애도 차단합니다. 정상 체인의 미등록 Tool은 Registry 장애와 구분해 미등록으로 차단합니다. 체인을 재시작했으면 다시 배포·시드해야 합니다.
 
 별도 테스트넷은 `RPC_URL`, `CHAIN_ID`, `REGISTRY_ADDRESS`, 게시자와 배포 키를 일치시켜 연결할 수 있습니다. 이번 MVP에서 자동 배포한 범위는 로컬 체인입니다. 자세한 컨트랙트 사용법은 [packages/contracts/README.md](packages/contracts/README.md)를 참고하세요.
 
@@ -115,6 +117,8 @@ flowchart LR
 ```
 
 - 등록·승인·폐기는 온체인 변경이며, 실행 전 검증은 `readContract` 조회입니다. 실행마다 트랜잭션을 보내지 않습니다.
+- 온체인 ID는 `hashToolId(publisher, toolId)`로 계산하여 게시자별로 격리합니다. 컨트랙트가 등록자의 주소로 직접 계산하므로 다른 게시자의 이름을 선점할 수 없습니다. Manifest와 실행 요청의 `toolId`는 기존 원문을 유지하며, 게이트웨이는 선택한 Manifest의 게시자와 함께 조회합니다.
+- 온체인 승인·복원은 검토한 `version`과 `expectedRevision`에 묶입니다. 등록·승인·폐기·복원 때 revision이 증가하며 오래된 요청은 거부됩니다. 폐기된 Tool은 일반 승인으로 복원되지 않습니다.
 - 데모 Registry의 신뢰 기준은 저장소에 포함된 초기 Manifest입니다. 실행 시 받아온 Manifest를 자동으로 신뢰·승인하지 않습니다.
 - Publisher, 승인 여부, 버전, Manifest·Permission 해시, 폐기 상태, `tools/list`의 이름·설명·입력 형식, 정책상 권한을 비교합니다.
 - `report:write`는 사용자가 승인할 수 있고, 허용·승인 대상이 아닌 권한은 차단합니다. LLM이나 요청 본문에서 권한을 부여할 수 없습니다.
@@ -164,12 +168,14 @@ pnpm format:check
 
 - 공유 모듈: JSON 정규화·해시 일치, 승인·폐기·위장·변조·권한 정책.
 - API: 실제 MCP HTTP 호출, 승인 전 미실행, 동시 승인 1회 실행, 거절, 승인 중 상태 변경, 잘못된 인자, 차단 시 서버 실행 횟수 불변, 브라우저 Origin·서버 인증, SQLite 재개방.
-- 컨트랙트: 등록·ID 소유권·승인자 권한·버전 변경·폐기·명시적 재승인.
-- 로컬 체인 smoke: 실제 Registry 어댑터 조회와 폐기·재승인 반영.
+- 컨트랙트: 게시자별 ID·선점 방지·승인자 권한·버전 변경·폐기·revision 불일치 거부·명시적 복원.
+- 로컬 체인 smoke: 실제 Registry 어댑터 조회와 폐기·복원 반영.
 
 ## 설정과 데이터
 
-루트 `.env.example`을 참고하세요. `pnpm dev`는 루트 `.env`를 읽습니다. 배포·시드 명령은 셸에 설정된 환경 변수를 읽으며 `.env`를 자동으로 읽지 않습니다.
+루트 `.env.example`을 참고하세요. `pnpm dev`, API·Tool 서버의 개별 시작 명령, 배포·시드·smoke 명령은 모두 루트 `.env`를 읽습니다. 이미 셸에 설정한 환경 변수가 우선합니다. 외부 RPC에는 `CHAIN_ID`를 명시해야 하며, 배포·시드 전에 실제 RPC의 체인 ID와 일치하는지 검사합니다.
+
+배포 파일은 chain 31337에서 `packages/contracts/deployments/localhost.json`, 다른 체인에서 `packages/contracts/deployments/<CHAIN_ID>.json`을 기본으로 사용합니다. `REGISTRY_DEPLOYMENT`로 루트 기준 상대 경로나 절대 경로를 지정하면 배포·시드·API가 같은 파일을 사용합니다. 파일의 주소·chainId·ABI를 검증하며, `REGISTRY_ADDRESS`와 파일 경로를 둘 다 지정하면 주소도 같아야 합니다. API 조회만 할 때는 `REGISTRY_ADDRESS`만 지정해 파일 없이 연결할 수 있습니다.
 
 실행 정보는 `data/sentinel.sqlite`, Tool 실행 확인용 기록은 `data/tools/executions.jsonl`, 보고서는 `data/tools/reports.jsonl`에 저장됩니다. 이 데이터와 `.env`, 배포 산출물은 Git에 포함되지 않습니다. `DATA_DIR`로 별도의 데이터 위치를 지정할 수 있습니다.
 

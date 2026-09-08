@@ -67,7 +67,7 @@ export function createApiApp(
       manifests.map(async (m) => {
         let record = null;
         try {
-          record = await gateway.registry.get(m.toolId);
+          record = await gateway.registry.get(m);
         } catch {
           /* list remains viewable during outage; verify fails closed */
         }
@@ -80,6 +80,7 @@ export function createApiApp(
           permissions: m.permissions,
           approved: record?.approved || false,
           revoked: record?.revoked || false,
+          revision: record?.revision ?? null,
         };
       }),
     );

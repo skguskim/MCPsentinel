@@ -1,5 +1,15 @@
-import { readFileSync } from "node:fs";
-import { createPublicClient, http, parseAbi, type Address } from "viem";
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  createPublicClient,
+  http,
+  type Address,
+} from "viem";
+import {
+  assertRegistryContract,
+  readRegistryDeployment,
+  toolRegistryAbi,
+} from "@mcpsentinel/shared/blockchain";
 import {
   hashManifest,
   hashPermissions,
@@ -7,12 +17,13 @@ import {
   RegistryRecordSchema,
   type RegistryRecord,
   type ToolManifest,
+  type ToolIdentity,
 } from "@mcpsentinel/shared";
 import type { DemoScenario } from "@mcpsentinel/shared/demo";
 
 export interface Registry {
   mode: "demo" | "onchain";
-  get(toolId: string): Promise<RegistryRecord | null>;
+  get(tool: ToolIdentity): Promise<RegistryRecord | null>;
 }
 export class DemoRegistry implements Registry {
   readonly mode = "demo";
@@ -21,7 +32,7 @@ export class DemoRegistry implements Registry {
   constructor(trusted: ToolManifest[]) {
     this.records = new Map(
       trusted.map((m) => [
-        m.toolId,
+        hashToolId(m.publisher, m.toolId),
         {
           publisher: m.publisher,
           version: m.version,
@@ -30,21 +41,18 @@ export class DemoRegistry implements Registry {
           approved: true,
           revoked: false,
           exists: true,
+          revision: "1",
         },
       ]),
     );
   }
-  async get(toolId: string) {
+  async get(tool: ToolIdentity) {
     if (this.scenario === "registry-unavailable")
       throw new Error("Demo registry outage");
-    const record = this.records.get(toolId);
+    const record = this.records.get(hashToolId(tool.publisher, tool.toolId));
     return record ? { ...record, revoked: this.scenario === "revoked" } : null;
   }
 }
-const abi = parseAbi([
-  "struct ToolRecord { address publisher; string version; bytes32 manifestHash; bytes32 permissionHash; bool approved; bool revoked; bool exists; }",
-  "function getTool(bytes32 toolId) view returns (ToolRecord)",
-]);
 export class OnchainRegistry implements Registry {
   readonly mode = "onchain";
   private client;
@@ -57,23 +65,41 @@ export class OnchainRegistry implements Registry {
       transport: http(rpcUrl, { timeout: 5000, retryCount: 0 }),
     });
   }
-  async get(toolId: string) {
-    if ((await this.client.getChainId()) !== this.chainId)
-      throw new Error("Unexpected chain ID");
+  async validateConnection() {
+    await assertRegistryContract(this.client, this.address, this.chainId);
+  }
+  async get(tool: ToolIdentity): Promise<RegistryRecord | null> {
+    await this.validateConnection();
     // No fallback to demo, cached allow, or trust-on-first-use on RPC failure.
-    return RegistryRecordSchema.parse(
-      await this.client.readContract({
-        address: this.address,
-        abi,
-        functionName: "getTool",
-        args: [hashToolId(toolId)],
-      }),
-    );
+    const id = hashToolId(tool.publisher, tool.toolId);
+    try {
+      return RegistryRecordSchema.parse(
+        await this.client.readContract({
+          address: this.address,
+          abi: toolRegistryAbi,
+          functionName: "getTool",
+          args: [id],
+        }),
+      );
+    } catch (error) {
+      const cause =
+        error instanceof BaseError
+          ? error.walk((item) => item instanceof ContractFunctionRevertedError)
+          : undefined;
+      if (
+        cause instanceof ContractFunctionRevertedError &&
+        cause.data?.errorName === "ToolNotFound" &&
+        cause.data.args?.[0] === id
+      )
+        return null;
+      // Other reverts, RPC failures and malformed responses remain failures.
+      throw error;
+    }
   }
 }
-export function deploymentAddress(path: string): Address {
-  const data = JSON.parse(readFileSync(path, "utf8")) as { address?: string };
-  if (!data.address || !/^0x[0-9a-fA-F]{40}$/.test(data.address))
-    throw new Error("Invalid Registry deployment address");
-  return data.address as Address;
+export function deploymentAddress(
+  path: string,
+  expectedChainId: number,
+): Address {
+  return readRegistryDeployment(path, expectedChainId).address;
 }

@@ -15,6 +15,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm --filter @mcpsentinel/shared test && pnpm --filter @mcpsentinel/api test",
     "test:contracts": "pnpm --filter @mcpsentinel/contracts test",
+    "review:blockchain": "pnpm --filter @mcpsentinel/contracts review",
     "build": "pnpm --filter @mcpsentinel/web build",
     "chain": "pnpm --filter @mcpsentinel/contracts node",
     "chain:deploy": "pnpm --filter @mcpsentinel/contracts deploy",
