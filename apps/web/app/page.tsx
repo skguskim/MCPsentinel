@@ -20,6 +20,7 @@ import { api } from "@/lib/api";
 import Icon from "@/components/common/Icon";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import StatsGrid from "@/components/dashboard/StatsGrid";
 
 const scenarios: { id: Scenario; name: string; description: string }[] = [
   { id: "normal", name: "정상 Tool", description: "승인된 정보와 일치" },
@@ -244,38 +245,13 @@ export default function Dashboard() {
               </button>
             </div>
           )}
-
-          <section className="stats-grid" aria-label="실행 통계">
-            <Stat
-              icon="box"
-              label="등록된 Tool"
-              value={loading ? "—" : tools.length}
-              detail="연결된 Tool 목록"
-              tone="blue"
-            />
-            <Stat
-              icon="check"
-              label="실행 완료"
-              value={loading ? "—" : completedCount}
-              detail="검증 후 실행된 요청"
-              tone="green"
-            />
-            <Stat
-              icon="shield"
-              label="차단된 요청"
-              value={loading ? "—" : blockedCount}
-              detail="실행 전에 위험 차단"
-              tone="red"
-            />
-            <Stat
-              icon="clock"
-              label="승인 대기"
-              value={loading ? "—" : reviewCount}
-              detail="사용자 확인이 필요해요"
-              tone="amber"
-            />
-          </section>
-
+          <StatsGrid
+            loading={loading}
+            toolsCount={tools.length}
+            completedCount={completedCount}
+            blockedCount={blockedCount}
+            reviewCount={reviewCount}
+          />
           <div className="workbench-grid">
             <section
               className="panel request-panel"
@@ -718,36 +694,6 @@ export default function Dashboard() {
           </footer>
         </main>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: IconName;
-  label: string;
-  value: number | string;
-  detail: string;
-  tone: string;
-}) {
-  return (
-    <div className="stat-card">
-      <div className="stat-top">
-        <span>{label}</span>
-        <span className={`stat-icon ${tone}`}>
-          <Icon name={icon} size={18} />
-        </span>
-      </div>
-      <strong className="stat-value">
-        {value}
-        <span>건</span>
-      </strong>
-      <p>{detail}</p>
     </div>
   );
 }
