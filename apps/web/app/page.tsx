@@ -22,6 +22,8 @@ import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import StatsGrid from "@/components/dashboard/StatsGrid";
 import RequestPanel from "@/components/dashboard/RequestsPanel";
+import VerificationPanel from "@/components/dashboard/VerificationPanel";
+import Badge from "@/components/common/Badge";
 
 const scenarios: { id: Scenario; name: string; description: string }[] = [
   { id: "normal", name: "정상 Tool", description: "승인된 정보와 일치" },
@@ -63,15 +65,6 @@ const time = (value: string) =>
     second: "2-digit",
     hour12: false,
   });
-
-function Badge({ decision }: { decision: Decision }) {
-  return (
-    <span className={`badge ${decision.toLowerCase()}`}>
-      <span className="status-dot" />
-      {decision}
-    </span>
-  );
-}
 
 export default function Dashboard() {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -265,161 +258,14 @@ export default function Dashboard() {
             submit={submit}
             changeScenario={changeScenario}
           />
-            <section
-              className="panel verification-panel"
-              aria-labelledby="verification-heading"
-              aria-live="polite"
-            >
-              <div className="panel-heading">
-                <div className="heading-icon green">
-                  <Icon name="shield" />
-                </div>
-                <div>
-                  <h2 id="verification-heading">실시간 검증 결과</h2>
-                  <p>선택한 요청의 실행 결정과 근거</p>
-                </div>
-                <span className="step-label">02 / VERIFY</span>
-              </div>
-              {selectedRun ? (
-                <>
-                  <div
-                    className={`decision-summary ${selectedRun.decision.toLowerCase()}`}
-                  >
-                    <div className="decision-symbol">
-                      <Icon
-                        name={
-                          selectedRun.decision === "ALLOW"
-                            ? "check"
-                            : selectedRun.decision === "REVIEW"
-                              ? "clock"
-                              : "shield"
-                        }
-                        size={25}
-                      />
-                    </div>
-                    <div>
-                      <div className="decision-title">
-                        {statusNames[selectedRun.status]}
-                      </div>
-                      <div className="decision-subtitle">
-                        {selectedRun.toolId}
-                      </div>
-                    </div>
-                    <Badge decision={selectedRun.decision} />
-                  </div>
-                  <div className="run-metadata">
-                    <span>
-                      REQUEST ID <code>{selectedRun.id.slice(0, 12)}</code>
-                    </span>
-                    <span>{time(selectedRun.createdAt)}</span>
-                  </div>
-                  <div className="checks">
-                    {selectedRun.checks.map((check) => (
-                      <div className="check-row" key={check.key}>
-                        <span
-                          className={`check-icon ${check.passed ? "green" : "red"}`}
-                        >
-                          <Icon
-                            name={check.passed ? "check" : "cross"}
-                            size={13}
-                          />
-                        </span>
-                        <div>
-                          <strong>{check.label}</strong>
-                          <p>{check.detail}</p>
-                        </div>
-                        <span
-                          className={`check-state ${check.passed ? "green" : "red"}`}
-                        >
-                          {check.passed ? "PASS" : "FAIL"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {selectedRun.reasons.length > 0 && (
-                    <div className="reasons">
-                      {selectedRun.reasons.map((reason, index) => (
-                        <p key={`${index}-${reason}`}>{reason}</p>
-                      ))}
-                    </div>
-                  )}
-                  {selectedRun.status === "pending_review" && (
-                    <div className="review-box">
-                      <strong>이 요청의 실행을 승인할까요?</strong>
-                      <p>
-                        승인은 이 Tool과 실행 인자에만 적용됩니다. 실행 직전에
-                        상태를 다시 검증합니다.
-                      </p>
-                      <details>
-                        <summary>실행 인자 확인</summary>
-                        <pre>
-                          {JSON.stringify(selectedRun.arguments, null, 2)}
-                        </pre>
-                      </details>
-                      <div className="review-actions">
-                        <button
-                          className="secondary-button"
-                          disabled={busy !== null}
-                          onClick={() => void review("reject")}
-                        >
-                          {busy === "reject" ? "거절 중…" : "거절"}
-                        </button>
-                        <button
-                          className="primary-button"
-                          disabled={busy !== null}
-                          onClick={() => void review("approve")}
-                        >
-                          {busy === "approve" ? "재검증 중…" : "승인 후 실행"}
-                          <Icon name="arrow" size={15} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {selectedRun.result !== undefined && (
-                    <div className="result-box">
-                      <div className="section-label">
-                        <span>TOOL RESPONSE</span>
-                        <span className="green">실행 결과</span>
-                      </div>
-                      <pre>
-                        {typeof selectedRun.result === "string"
-                          ? selectedRun.result
-                          : JSON.stringify(selectedRun.result, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  {selectedRun.error && (
-                    <div className="inline-error">{selectedRun.error}</div>
-                  )}
-                </>
-              ) : (
-                <div className="empty-verification">
-                  <div className="radar">
-                    <div className="radar-inner">
-                      <Icon name="shield" size={37} />
-                    </div>
-                    <span className="radar-point" />
-                  </div>
-                  <h3>
-                    {loading
-                      ? "Gateway에 연결하고 있어요"
-                      : "첫 번째 요청을 기다리고 있어요"}
-                  </h3>
-                  <p>
-                    왼쪽에서 요청을 실행하면
-                    <br />
-                    검증 항목과 실행 결과가 여기에 표시됩니다.
-                  </p>
-                  <div className="pipeline">
-                    <span>요청</span>
-                    <Icon name="arrow" size={13} />
-                    <span className="pipeline-focus">신뢰 검증</span>
-                    <Icon name="arrow" size={13} />
-                    <span>Tool 실행</span>
-                  </div>
-                </div>
-              )}
-            </section>
+          <VerificationPanel
+            selectedRun={selectedRun}
+            busy={busy}
+            loading={loading}
+            statusNames={statusNames}
+            time={time}
+            review={review}
+          />
           </div>
 
           <section
