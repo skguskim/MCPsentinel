@@ -1,5 +1,13 @@
 "use client";
 
+import type {
+  Decision,
+  Run,
+  Tool,
+  Scenario,
+  IconName,
+} from "@/types";
+
 import {
   useCallback,
   useEffect,
@@ -7,51 +15,6 @@ import {
   useState,
   type FormEvent,
 } from "react";
-
-type Decision = "ALLOW" | "REVIEW" | "BLOCK";
-type Run = {
-  id: string;
-  toolId: string;
-  arguments: Record<string, unknown>;
-  prompt?: string;
-  decision: Decision;
-  status: "completed" | "pending_review" | "blocked" | "rejected" | "failed";
-  checks: { key: string; label: string; passed: boolean; detail: string }[];
-  reasons: string[];
-  result?: unknown;
-  error?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-type Tool = {
-  toolId: string;
-  name: string;
-  description: string;
-  version: string;
-  publisher: string;
-  permissions: string[];
-  approved: boolean;
-  revoked: boolean;
-};
-type Scenario =
-  | "normal"
-  | "tampered"
-  | "revoked"
-  | "version-mismatch"
-  | "permission-denied"
-  | "registry-unavailable";
-type IconName =
-  | "shield"
-  | "grid"
-  | "box"
-  | "history"
-  | "arrow"
-  | "check"
-  | "cross"
-  | "clock"
-  | "chain"
-  | "refresh"
-  | "spark";
 
 function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
