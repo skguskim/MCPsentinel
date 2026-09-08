@@ -1,18 +1,19 @@
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { isAddress } from "viem";
+import {
+  loadProjectEnv,
+  readBlockchainConfig,
+  resolveRegistryAddress,
+} from "@mcpsentinel/shared/blockchain";
 import { createDemoManifests } from "@mcpsentinel/shared/demo";
 import { createApiApp } from "./app.js";
 import { Gateway } from "./gateway.js";
 import { ToolConnection } from "./mcp.js";
-import {
-  DemoRegistry,
-  OnchainRegistry,
-  deploymentAddress,
-} from "./registry.js";
+import { DemoRegistry, OnchainRegistry } from "./registry.js";
 import { RunStore } from "./store.js";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
+loadProjectEnv();
 const port = Number(process.env.API_PORT || 4000);
 const baseUrl = (
   process.env.TOOL_SERVER_URL ||
@@ -26,28 +27,18 @@ if (!token)
 const mode = process.env.REGISTRY_MODE || "demo";
 if (!["demo", "onchain"].includes(mode))
   throw new Error("REGISTRY_MODE must be demo or onchain");
-const address =
-  mode === "onchain"
-    ? process.env.REGISTRY_ADDRESS ||
-      deploymentAddress(
-        resolve(
-          root,
-          process.env.REGISTRY_DEPLOYMENT ||
-            "packages/contracts/deployments/localhost.json",
-        ),
-      )
-    : undefined;
-if (address && !isAddress(address)) throw new Error("Invalid REGISTRY_ADDRESS");
-const registry =
-  mode === "onchain"
-    ? new OnchainRegistry(
-        address as `0x${string}`,
-        process.env.RPC_URL || "http://127.0.0.1:8545",
-        Number(process.env.CHAIN_ID || 31337),
-      )
-    : new DemoRegistry(
-        createDemoManifests(`${baseUrl}/mcp`, process.env.TOOL_PUBLISHER),
-      );
+const chain = mode === "onchain" ? readBlockchainConfig() : undefined;
+const registry = chain
+  ? new OnchainRegistry(
+      resolveRegistryAddress(chain),
+      chain.rpcUrl,
+      chain.chainId,
+    )
+  : new DemoRegistry(
+      createDemoManifests(`${baseUrl}/mcp`, process.env.TOOL_PUBLISHER),
+    );
+// Invalid startup configuration must not present a healthy on-chain service.
+if (registry instanceof OnchainRegistry) await registry.validateConnection();
 const store = new RunStore(
   resolve(process.env.DATA_DIR || resolve(root, "data"), "sentinel.sqlite"),
 );

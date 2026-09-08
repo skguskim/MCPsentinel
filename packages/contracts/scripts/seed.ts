@@ -11,16 +11,18 @@ import {
   type Hex,
 } from "viem";
 import { createClients, readDeployment } from "./clients.js";
+import {
+  assertExpectedChain,
+  assertRegistryContract,
+} from "@mcpsentinel/shared/blockchain";
 
-const { account, chainId, publicClient, walletClient } = await createClients();
-const deployment = await readDeployment(chainId);
-if (!(await publicClient.getCode({ address: deployment.address }))) {
-  throw new Error(
-    "Registry contract not found. Redeploy after restarting the local chain.",
-  );
-}
+const { account, chainId, config, publicClient, walletClient } =
+  await createClients();
+const deployment = readDeployment(config);
+await assertRegistryContract(publicClient, deployment.address, chainId);
 const manifestUrl =
-  process.env.MANIFEST_URL ?? "http://127.0.0.1:4100/manifest";
+  process.env.MANIFEST_URL ??
+  `${(process.env.TOOL_SERVER_URL ?? `http://127.0.0.1:${process.env.TOOLS_PORT || 4100}`).replace(/\/$/, "")}/manifest`;
 const response = await fetch(manifestUrl, {
   signal: AbortSignal.timeout(10_000),
 });
@@ -53,12 +55,14 @@ type RegisteredTool = {
 };
 
 async function send(functionName: string, args: unknown[]) {
+  await assertRegistryContract(publicClient, deployment.address, chainId);
   const { request } = await publicClient.simulateContract({
     ...deployment,
     functionName,
     args,
     account,
   });
+  await assertExpectedChain(publicClient, chainId);
   const hash = await walletClient.writeContract(request);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success")

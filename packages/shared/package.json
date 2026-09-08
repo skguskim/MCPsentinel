@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./demo": "./src/demo.ts"
+    "./demo": "./src/demo.ts",
+    "./blockchain": "./src/blockchain.ts"
   },
   "types": "./src/index.ts",
   "scripts": {

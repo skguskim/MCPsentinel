@@ -68,7 +68,7 @@ pnpm --filter @mcpsentinel/contracts smoke
 REGISTRY_MODE=onchain
 ```
 
-다시 `pnpm dev`로 실행하면 UI에 온체인 모드가 표시되고, 매 검증마다 실제 컨트랙트를 읽습니다. 체인이 꺼졌거나 응답이 잘못되면 실행을 차단하며 데모 Registry로 대체하지 않습니다. 체인을 재시작했으면 다시 배포·시드해야 합니다.
+다시 `pnpm dev`로 실행하면 UI에 온체인 모드가 표시되고, 매 검증마다 실제 컨트랙트를 읽습니다. API 시작 시 체인 ID와 대상 주소의 계약 코드 존재 여부를 확인합니다. 설정이 잘못되거나 RPC에 연결할 수 없으면 시작을 중단하며, 실행 중 조회 장애도 차단합니다. 정상 체인의 미등록 Tool은 Registry 장애와 구분해 미등록으로 차단합니다. 체인을 재시작했으면 다시 배포·시드해야 합니다.
 
 별도 테스트넷은 `RPC_URL`, `CHAIN_ID`, `REGISTRY_ADDRESS`, 게시자와 배포 키를 일치시켜 연결할 수 있습니다. 이번 MVP에서 자동 배포한 범위는 로컬 체인입니다. 자세한 컨트랙트 사용법은 [packages/contracts/README.md](packages/contracts/README.md)를 참고하세요.
 
@@ -169,7 +169,9 @@ pnpm format:check
 
 ## 설정과 데이터
 
-루트 `.env.example`을 참고하세요. `pnpm dev`는 루트 `.env`를 읽습니다. 배포·시드 명령은 셸에 설정된 환경 변수를 읽으며 `.env`를 자동으로 읽지 않습니다.
+루트 `.env.example`을 참고하세요. `pnpm dev`, API·Tool 서버의 개별 시작 명령, 배포·시드·smoke 명령은 모두 루트 `.env`를 읽습니다. 이미 셸에 설정한 환경 변수가 우선합니다. 외부 RPC에는 `CHAIN_ID`를 명시해야 하며, 배포·시드 전에 실제 RPC의 체인 ID와 일치하는지 검사합니다.
+
+배포 파일은 chain 31337에서 `packages/contracts/deployments/localhost.json`, 다른 체인에서 `packages/contracts/deployments/<CHAIN_ID>.json`을 기본으로 사용합니다. `REGISTRY_DEPLOYMENT`로 루트 기준 상대 경로나 절대 경로를 지정하면 배포·시드·API가 같은 파일을 사용합니다. 파일의 주소·chainId·ABI를 검증하며, `REGISTRY_ADDRESS`와 파일 경로를 둘 다 지정하면 주소도 같아야 합니다. API 조회만 할 때는 `REGISTRY_ADDRESS`만 지정해 파일 없이 연결할 수 있습니다.
 
 실행 정보는 `data/sentinel.sqlite`, Tool 실행 확인용 기록은 `data/tools/executions.jsonl`, 보고서는 `data/tools/reports.jsonl`에 저장됩니다. 이 데이터와 `.env`, 배포 산출물은 Git에 포함되지 않습니다. `DATA_DIR`로 별도의 데이터 위치를 지정할 수 있습니다.
 
