@@ -61,8 +61,13 @@ export class Gateway {
   }
   create(input: RunRequest) {
     return this.exclusive(async () => {
+      if (this.isExchangeReportWorkflow(input)) {
+        return this.createExchangeReportWorkflow(input);
+      }
+
       const plan = this.plan(input);
       const at = new Date().toISOString();
+
       const run: StoredRun = {
         id: randomUUID(),
         ...plan,
@@ -74,9 +79,84 @@ export class Gateway {
         createdAt: at,
         updatedAt: at,
       };
+
       return this.evaluate(run, false);
     });
   }
+
+  private isExchangeReportWorkflow(input: RunRequest): boolean {
+    if (input.toolId) return false;
+
+    const prompt = input.prompt || "";
+
+    const hasExchange = /환율|달러|exchange|usd|eur|jpy|유로|엔화/i.test(
+      prompt,
+    );
+
+    const hasReport = /보고서|report/i.test(prompt);
+
+    return hasExchange && hasReport;
+  }
+
+  private exchangeBase(prompt: string): "USD" | "EUR" | "JPY" {
+    if (/eur|유로/i.test(prompt)) return "EUR";
+    if (/jpy|엔화/i.test(prompt)) return "JPY";
+
+    return "USD";
+  }
+
+  private async createExchangeReportWorkflow(
+    input: RunRequest,
+  ): Promise<StoredRun> {
+    const prompt = input.prompt || "";
+
+    const exchangeAt = new Date().toISOString();
+
+    const exchangeRun: StoredRun = {
+      id: randomUUID(),
+      toolId: "exchange_rate",
+      arguments: {
+        base: this.exchangeBase(prompt),
+        quote: "KRW",
+      },
+      prompt: input.prompt,
+      decision: "BLOCK",
+      status: "blocked",
+      checks: [],
+      reasons: [],
+      createdAt: exchangeAt,
+      updatedAt: exchangeAt,
+    };
+
+    const evaluatedExchange = await this.evaluate(exchangeRun, false);
+
+    if (evaluatedExchange.status !== "completed") {
+      return evaluatedExchange;
+    }
+
+    const exchangeResult = JSON.stringify(evaluatedExchange.result, null, 2);
+
+    const reportAt = new Date().toISOString();
+
+    const reportRun: StoredRun = {
+      id: randomUUID(),
+      toolId: "update_report",
+      arguments: {
+        title: "환율 보고서",
+        content: `공식 환율 조회 결과:\n${exchangeResult}`,
+      },
+      prompt: input.prompt,
+      decision: "BLOCK",
+      status: "blocked",
+      checks: [],
+      reasons: [],
+      createdAt: reportAt,
+      updatedAt: reportAt,
+    };
+
+    return this.evaluate(reportRun, false);
+  }
+
   approve(id: string) {
     return this.exclusive(async () => {
       const run = this.store.get(id);
