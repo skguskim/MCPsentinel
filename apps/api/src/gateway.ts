@@ -89,11 +89,11 @@ export class Gateway {
 
     const prompt = input.prompt || "";
 
-    const hasExchange =
-      /환율|달러|exchange|usd|eur|jpy|유로|엔화/i.test(prompt);
+    const hasExchange = /환율|달러|exchange|usd|eur|jpy|유로|엔화/i.test(
+      prompt,
+    );
 
-    const hasReport =
-      /보고서|report/i.test(prompt);
+    const hasReport = /보고서|report/i.test(prompt);
 
     return hasExchange && hasReport;
   }
@@ -134,11 +134,7 @@ export class Gateway {
       return evaluatedExchange;
     }
 
-    const exchangeResult = JSON.stringify(
-      evaluatedExchange.result,
-      null,
-      2,
-    );
+    const exchangeResult = JSON.stringify(evaluatedExchange.result, null, 2);
 
     const reportAt = new Date().toISOString();
 
