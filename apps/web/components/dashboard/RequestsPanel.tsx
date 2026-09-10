@@ -90,7 +90,33 @@ export default function RequestPanel({
             <label htmlFor="scenario">검증 시나리오</label>
             <span>DEMO CONTROLS</span>
           </div>
+          <div className="scenario-presets">
+            {scenarios.map((item) => (
+                <button
+                key={item.id}
+                type="button"
+                className={`scenario-button scenario-${item.id} ${
+                    scenario === item.id ? "active" : ""
+                }`}
+                disabled={
+                    busy !== null ||
+                    !connected ||
+                    registryMode !== "demo"
+                }
+                onClick={() => void changeScenario(item.id)}
+                >
+                <span className="scenario-button-title">
+                    <span className="scenario-indicater" />
+                    {item.name}
+                </span>
 
+                <span className="scenario-button-description">
+                    {item.description}
+                </span>
+            </button>
+            ))}
+           </div>
+                    
           <select
             id="scenario"
             value={scenario}

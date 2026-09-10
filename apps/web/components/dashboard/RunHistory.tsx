@@ -93,11 +93,9 @@ export default function RunHistory({
               sortedRuns.map((run) => (
                 <tr
                   key={run.id}
-                  className={
-                    selectedRun?.id === run.id
-                      ? "selected-row"
-                      : ""
-                  }
+                  className={`history-row decision-${run.decision.toLowerCase()} ${
+                    selectedRun?.id === run.id ? "selected-row" : ""
+                  }`}
                 >
                   <td>
                     <strong className="request-title">

@@ -1,6 +1,7 @@
 import Icon from "@/components/common/Icon";
 import Badge from "@/components/common/Badge";
 import type { Run } from "@/types";
+import { decisionDescriptions } from "@/lib/constants";
 
 type VerificationPanelProps = {
   selectedRun: Run | null;
@@ -64,6 +65,10 @@ export default function VerificationPanel({
               <div className="decision-subtitle">
                 {selectedRun.toolId}
               </div>
+
+              <code className="decision-tool">
+                {selectedRun.toolId}
+              </code>
             </div>
 
             <Badge decision={selectedRun.decision} />
@@ -76,7 +81,31 @@ export default function VerificationPanel({
 
             <span>{time(selectedRun.createdAt)}</span>
           </div>
+          <div className="verification-flow" aria-label="검증 흐름">
+            <span className="flow-step">
+                Registry
+            </span>
 
+            <Icon name="arrow" size={13} />
+
+            <span className="flow-step">
+                Integrity
+            </span>
+
+            <Icon name="arrow" size={13} />
+
+            <span className="flow-step">
+                Permission
+            </span>
+
+            <Icon name="arrow" size={13} />
+
+            <span
+                className={`flow-step decision ${selectedRun.decision.toLowerCase()}`}
+            >
+                {selectedRun.decision}
+            </span>
+          </div>
           <div className="checks">
             {selectedRun.checks.map((check) => (
               <div className="check-row" key={check.key}>
@@ -108,12 +137,35 @@ export default function VerificationPanel({
           </div>
 
           {selectedRun.reasons.length > 0 && (
-            <div className="reasons">
-              {selectedRun.reasons.map((reason, index) => (
+            <div
+                className={`reasons ${selectedRun.decision.toLowerCase()}`}
+            >
+                <div className="reasons-heading">
+                <Icon
+                    name={
+                    selectedRun.decision === "BLOCK"
+                        ? "shield"
+                        : selectedRun.decision === "REVIEW"
+                        ? "clock"
+                        : "check"
+                    }
+                    size={15}
+                />
+
+                <strong>
+                    {selectedRun.decision === "BLOCK"
+                    ? "차단 사유"
+                    : selectedRun.decision === "REVIEW"
+                        ? "승인 필요 사유"
+                        : "검증 결과"}
+                </strong>
+                </div>
+
+                {selectedRun.reasons.map((reason, index) => (
                 <p key={`${index}-${reason}`}>{reason}</p>
-              ))}
+                ))}
             </div>
-          )}
+           )}
 
           {selectedRun.status === "pending_review" && (
             <div className="review-box">
@@ -131,7 +183,28 @@ export default function VerificationPanel({
                   {JSON.stringify(selectedRun.arguments, null, 2)}
                 </pre>
               </details>
+              <div className="review-flow">
+                <div className="review-step completed">
+                    <span className="review-step-number">
+                    <Icon name="check" size={12} />
+                    </span>
+                    <span>Tool 검증</span>
+                </div>
 
+                <span className="review-line" />
+
+                <div className="review-step active">
+                    <span className="review-step-number">2</span>
+                    <span>사용자 승인</span>
+                </div>
+
+                <span className="review-line" />
+
+                <div className="review-step">
+                    <span className="review-step-number">3</span>
+                    <span>Tool 실행</span>
+                </div>
+              </div> 
               <div className="review-actions">
                 <button
                   className="secondary-button"

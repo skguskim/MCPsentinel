@@ -1,4 +1,10 @@
-import type { Run, Scenario } from "@/types";
+import type { Decision, Run, Scenario } from "@/types";
+
+export const decisionDescriptions: Record<Decision, string> = {
+    ALLOW: "검증을 통과홰 Tool 실행이 허용되었습니다.",
+    REVIEW: "실행 전 사용자의 추가 승인이 필요합니다.",
+    BLOCK: "신뢰 검증에 실패해 Tool 실행이 차단되었습니다.",
+};
 
 export const scenarios: {
   id: Scenario;
