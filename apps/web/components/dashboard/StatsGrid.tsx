@@ -1,6 +1,5 @@
 import Icon, { type IconName } from "@/components/common/Icon";
 
-
 /**
  * StatsGrid에서 필요한 통계 데이터
  *
@@ -24,7 +23,6 @@ type StatsGridProps = {
   reviewCount: number;
 };
 
-
 /**
  * 개별 통계 카드에서 사용하는 Props
  */
@@ -46,23 +44,15 @@ type StatProps = {
   tone: string;
 };
 
-
 /**
  * 하나의 Dashboard 통계 항목을 표시하는 재사용 카드
  *
  * 아이콘, 이름, 값, 설명을 Props로 전달받아
  * 동일한 형태의 통계 UI를 생성한다.
  */
-function Stat({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: StatProps) {
+function Stat({ icon, label, value, detail, tone }: StatProps) {
   return (
     <div className="stat-card">
-
       {/* 통계 이름 및 상태별 아이콘 */}
       <div className="stat-top">
         <span>{label}</span>
@@ -72,20 +62,17 @@ function Stat({
         </span>
       </div>
 
-
       {/* 통계의 핵심 숫자 */}
       <strong className="stat-value">
         {value}
         <span>건</span>
       </strong>
 
-
       {/* 해당 통계가 의미하는 내용 */}
       <p>{detail}</p>
     </div>
   );
 }
-
 
 /**
  * MCP Sentinel의 주요 실행 통계를 표시하는 영역
@@ -101,11 +88,7 @@ export default function StatsGrid({
   reviewCount,
 }: StatsGridProps) {
   return (
-    <section
-      className="stats-grid"
-      aria-label="실행 통계"
-    >
-
+    <section className="stats-grid" aria-label="실행 통계">
       {/* Registry에 등록되어 있는 Tool 수 */}
       <Stat
         icon="box"
@@ -114,7 +97,6 @@ export default function StatsGrid({
         detail="연결된 Tool 목록"
         tone="blue"
       />
-
 
       {/* 검증을 거쳐 실제 실행까지 완료된 요청 수 */}
       <Stat
@@ -125,7 +107,6 @@ export default function StatsGrid({
         tone="green"
       />
 
-
       {/* 보안 검증 과정에서 실행이 차단된 요청 수 */}
       <Stat
         icon="shield"
@@ -134,7 +115,6 @@ export default function StatsGrid({
         detail="실행 전에 위험 차단"
         tone="red"
       />
-
 
       {/* REVIEW 결정으로 사용자 승인을 기다리는 요청 수 */}
       <Stat

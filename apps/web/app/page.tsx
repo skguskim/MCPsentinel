@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  Run,
-  Tool,
-  Scenario,
-} from "@/types";
+import type { Run, Tool, Scenario } from "@/types";
 
 import {
   useCallback,
@@ -34,7 +30,6 @@ import ToolRegistry from "@/components/dashboard/ToolRegistry";
  * 사용자의 실행 요청 및 검증 결과를 각 UI 컴포넌트에 전달한다.
  */
 export default function Dashboard() {
-
   /* ==============================
      Dashboard State
      ============================== */
@@ -72,7 +67,6 @@ export default function Dashboard() {
 
   // 실행 이력 중 현재 상세 화면에 표시할 Run ID
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
 
   /* ==============================
      Dashboard Data
@@ -129,7 +123,6 @@ export default function Dashboard() {
     }
   }, []);
 
-
   /* ==============================
      Initial Load
      ============================== */
@@ -138,7 +131,6 @@ export default function Dashboard() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
 
   /* ==============================
      Derived Data
@@ -160,14 +152,11 @@ export default function Dashboard() {
     (run) => run.status === "completed",
   ).length;
 
-  const blockedCount = runs.filter(
-    (run) => run.decision === "BLOCK",
-  ).length;
+  const blockedCount = runs.filter((run) => run.decision === "BLOCK").length;
 
   const reviewCount = runs.filter(
     (run) => run.status === "pending_review",
   ).length;
-
 
   /* ==============================
      Run State Update
@@ -186,7 +175,6 @@ export default function Dashboard() {
     // 처리된 Run을 검증 상세 화면에서 바로 확인할 수 있도록 선택
     setSelectedId(run.id);
   }
-
 
   /* ==============================
      Tool Execution
@@ -215,7 +203,6 @@ export default function Dashboard() {
       setBusy(null);
     }
   }
-
 
   /* ==============================
      REVIEW Decision
@@ -246,7 +233,6 @@ export default function Dashboard() {
       setBusy(null);
     }
   }
-
 
   /* ==============================
      Demo Scenario
@@ -279,7 +265,6 @@ export default function Dashboard() {
     }
   }
 
-
   /* ==============================
      Dashboard UI
      ============================== */
@@ -287,17 +272,13 @@ export default function Dashboard() {
   return (
     <div className="app-shell">
       {/* 좌측 네비게이션 및 서버 연결 상태 */}
-      <Sidebar
-        toolsCount={tools.length}
-        connected={connected}
-      />
+      <Sidebar toolsCount={tools.length} connected={connected} />
 
       <div className="main-shell">
         {/* 상단 Workspace 헤더 */}
         <Topbar connected={connected} />
 
         <main id="overview">
-
           {/* 대시보드 제목 및 현재 Registry 모드 */}
           <div className="page-heading">
             <div>

@@ -2,7 +2,6 @@ import Icon from "@/components/common/Icon";
 import Badge from "@/components/common/Badge";
 import type { Run } from "@/types";
 
-
 /**
  * RunHistory 컴포넌트에서 사용하는 Props
  *
@@ -44,7 +43,6 @@ type RunHistoryProps = {
   setSelectedId: (value: string) => void;
 };
 
-
 /**
  * MCP Sentinel의 전체 Tool 실행 이력을 표시하는 테이블
  *
@@ -74,13 +72,11 @@ export default function RunHistory({
       <div className="table-heading">
         <div>
           <h2 id="history-heading">
-            실행 이력{" "}
-            <span className="heading-count">{runs.length}</span>
+            실행 이력 <span className="heading-count">{runs.length}</span>
           </h2>
 
           <p>허용, 승인 대기, 차단된 요청을 한곳에서 확인하세요.</p>
         </div>
-
 
         {/* 서버에서 최신 Dashboard 데이터를 다시 조회 */}
         <button
@@ -103,12 +99,9 @@ export default function RunHistory({
         >
           <Icon name="refresh" size={16} />
 
-          <span>
-            {busy === "refresh" ? "불러오는 중" : "새로고침"}
-          </span>
+          <span>{busy === "refresh" ? "불러오는 중" : "새로고침"}</span>
         </button>
       </div>
-
 
       {/* 작은 화면에서는 테이블을 가로 스크롤할 수 있도록 감싸는 영역 */}
       <div className="table-scroll">
@@ -127,7 +120,6 @@ export default function RunHistory({
             </tr>
           </thead>
 
-
           <tbody>
             {/* 실행 이력이 없을 경우 로딩 상태 또는 빈 상태 안내 */}
             {sortedRuns.length === 0 ? (
@@ -139,12 +131,10 @@ export default function RunHistory({
                 </td>
               </tr>
             ) : (
-
               /* 최신 실행 순서로 각 Run을 테이블 행으로 표시 */
               sortedRuns.map((run) => (
                 <tr
                   key={run.id}
-
                   // 실행 결정별 스타일과 현재 선택된 Run 스타일을 함께 적용
                   className={`history-row decision-${run.decision.toLowerCase()} ${
                     selectedRun?.id === run.id ? "selected-row" : ""
@@ -156,43 +146,33 @@ export default function RunHistory({
                       {run.prompt || run.toolId}
                     </strong>
 
-                    <code className="tool-code">
-                      {run.toolId}
-                    </code>
+                    <code className="tool-code">{run.toolId}</code>
                   </td>
-
 
                   {/* 최종 검증 결정: ALLOW / REVIEW / BLOCK */}
                   <td>
                     <Badge decision={run.decision} />
                   </td>
 
-
                   {/* 현재 Run의 실행 처리 상태 */}
                   <td>
                     <span
                       className={`run-status ${
-                        run.status === "completed"
-                          ? "green"
-                          : ""
+                        run.status === "completed" ? "green" : ""
                       }`}
                     >
                       {statusNames[run.status]}
                     </span>
                   </td>
 
-
                   {/* 화면에는 간단한 시간만 표시하고,
                       마우스를 올리면 전체 날짜와 시간을 확인할 수 있도록 title 제공 */}
                   <td
                     className="time-cell"
-                    title={new Date(
-                      run.createdAt,
-                    ).toLocaleString("ko-KR")}
+                    title={new Date(run.createdAt).toLocaleString("ko-KR")}
                   >
                     {time(run.createdAt)}
                   </td>
-
 
                   {/* 해당 Run의 검증 상세 결과 선택 */}
                   <td>
@@ -204,15 +184,12 @@ export default function RunHistory({
 
                         // 선택 후 검증 결과 패널 위치로 부드럽게 이동
                         document
-                          .getElementById(
-                            "verification-heading",
-                          )
+                          .getElementById("verification-heading")
                           ?.scrollIntoView({
                             behavior: "smooth",
                             block: "start",
                           });
                       }}
-
                       // 화면을 보지 않고 사용하는 경우에도
                       // 어떤 실행의 상세 버튼인지 알 수 있도록 설명 제공
                       aria-label={`${run.toolId} ${time(

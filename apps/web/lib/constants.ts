@@ -1,6 +1,5 @@
 import type { Decision, Run, Scenario } from "@/types";
 
-
 /* ==============================
    Decision Descriptions
    ============================== */
@@ -21,7 +20,6 @@ export const decisionDescriptions: Record<Decision, string> = {
   // 신뢰 검증에 실패하여 Tool 실행이 차단된 상태
   BLOCK: "신뢰 검증에 실패해 Tool 실행이 차단되었습니다.",
 };
-
 
 /* ==============================
    Demo Scenarios
@@ -81,7 +79,6 @@ export const scenarios: {
     description: "신뢰 기준 조회 불가",
   },
 ];
-
 
 /* ==============================
    Run Status Labels

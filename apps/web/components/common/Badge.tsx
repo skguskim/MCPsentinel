@@ -1,6 +1,5 @@
 import type { Decision } from "@/types";
 
-
 /**
  * Badge 컴포넌트에서 사용하는 Props
  */
@@ -8,7 +7,6 @@ type BadgeProps = {
   // MCP Sentinel의 최종 실행 결정
   decision: Decision;
 };
-
 
 /**
  * MCP Sentinel의 최종 검증 결정을 표시하는 공통 Badge
@@ -18,9 +16,7 @@ type BadgeProps = {
  *
  * VerificationPanel과 RunHistory 등에서 재사용된다.
  */
-export default function Badge({
-  decision,
-}: BadgeProps) {
+export default function Badge({ decision }: BadgeProps) {
   return (
     <span
       // Decision 값을 소문자로 변환하여

@@ -1,7 +1,6 @@
 import Icon from "@/components/common/Icon";
 import type { Tool } from "@/types";
 
-
 /**
  * ToolRegistry 컴포넌트에서 사용하는 Props
  *
@@ -19,7 +18,6 @@ type ToolRegistryProps = {
   // demo 또는 onchain 값을 사용하며 연결 전에는 null일 수 있다.
   registryMode: string | null;
 };
-
 
 /**
  * 현재 Registry에 등록된 Tool 정보를 표시하는 영역
@@ -42,8 +40,7 @@ export default function ToolRegistry({
       <div className="table-heading">
         <div>
           <h2 id="registry-heading">
-            Tool Registry{" "}
-            <span className="heading-count">{tools.length}</span>
+            Tool Registry <span className="heading-count">{tools.length}</span>
           </h2>
 
           <p>현재 연결된 Tool의 등록 정보와 권한</p>
@@ -55,11 +52,9 @@ export default function ToolRegistry({
         </span>
       </div>
 
-
       {/* Registry에 등록된 Tool 카드 목록 */}
       <div className="tool-grid">
         {tools.length === 0 ? (
-
           /* Tool 데이터가 없을 경우 로딩 상태 또는 연결 안내 표시 */
           <p className="empty-table">
             {loading
@@ -67,11 +62,9 @@ export default function ToolRegistry({
               : "표시할 Tool이 없어요. Gateway 연결을 확인하세요."}
           </p>
         ) : (
-
           /* 각 Tool을 개별 카드 형태로 표시 */
           tools.map((tool) => (
             <article className="tool-card" key={tool.toolId}>
-
               {/* Tool 아이콘 및 Registry 상태 */}
               <div className="tool-card-top">
                 <span className="tool-icon">
@@ -82,11 +75,7 @@ export default function ToolRegistry({
                     그 외에는 승인 여부에 따라 상태를 구분 */}
                 <span
                   className={`tool-state ${
-                    tool.revoked
-                      ? "red"
-                      : tool.approved
-                        ? "green"
-                        : "amber"
+                    tool.revoked ? "red" : tool.approved ? "green" : "amber"
                   }`}
                 >
                   <span className="status-dot" />
@@ -99,32 +88,26 @@ export default function ToolRegistry({
                 </span>
               </div>
 
-
               {/* Tool 기본 정보 */}
               <h3>{tool.name}</h3>
               <p>{tool.description}</p>
-
 
               {/* Tool 식별자 및 등록 버전 */}
               <div className="tool-card-meta">
                 <code>{tool.toolId}</code>
 
                 <span>
-                  {/* version 값에 이미 v가 포함된 경우 중복 표시 방지 */}
-                  v{tool.version.replace(/^v/, "")}
+                  {/* version 값에 이미 v가 포함된 경우 중복 표시 방지 */}v
+                  {tool.version.replace(/^v/, "")}
                 </span>
               </div>
-
 
               {/* Tool에 허용된 권한 목록 */}
               <div className="permission-tags">
                 {tool.permissions.map((permission) => (
-                  <span key={permission}>
-                    {permission}
-                  </span>
+                  <span key={permission}>{permission}</span>
                 ))}
               </div>
-
 
               {/* Tool을 등록하거나 배포한 Publisher 정보 */}
               <div className="publisher">

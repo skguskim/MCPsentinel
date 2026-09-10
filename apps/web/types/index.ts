@@ -7,7 +7,6 @@
  */
 export type Decision = "ALLOW" | "REVIEW" | "BLOCK";
 
-
 /**
  * MCP Sentinel을 통해 처리된 하나의 Tool 실행 기록
  *
@@ -57,7 +56,6 @@ export type Run = {
   updatedAt: string;
 };
 
-
 /**
  * MCP Sentinel Registry에 등록된 Tool 정보
  *
@@ -90,7 +88,6 @@ export type Tool = {
   revoked: boolean;
 };
 
-
 /**
  * 데모 모드에서 MCP Sentinel의 검증 결과를 테스트하기 위한 시나리오
  *
@@ -98,13 +95,12 @@ export type Tool = {
  * Registry 상태에 문제가 발생한 상황을 재현한다.
  */
 export type Scenario =
-  | "normal"                // 정상 Tool
-  | "tampered"              // Manifest 변조
-  | "revoked"               // 폐기된 Tool
-  | "version-mismatch"      // 승인되지 않은 Tool 버전
-  | "permission-denied"     // 허용 범위를 벗어난 권한 요청
+  | "normal" // 정상 Tool
+  | "tampered" // Manifest 변조
+  | "revoked" // 폐기된 Tool
+  | "version-mismatch" // 승인되지 않은 Tool 버전
+  | "permission-denied" // 허용 범위를 벗어난 권한 요청
   | "registry-unavailable"; // Registry 조회 불가
-
 
 /**
  * 공통 Icon 컴포넌트에서 사용할 수 있는 아이콘 이름

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-
 /**
  * Icon 컴포넌트에서 사용할 수 있는 아이콘 이름
  *
@@ -20,7 +19,6 @@ export type IconName =
   | "refresh"
   | "spark";
 
-
 /**
  * Icon 컴포넌트에서 사용하는 Props
  */
@@ -33,18 +31,13 @@ type IconProps = {
   size?: number;
 };
 
-
 /**
  * MCP Sentinel 전체에서 사용하는 공통 SVG Icon 컴포넌트
  *
  * name에 해당하는 SVG 요소를 선택하여 렌더링하고,
  * size 값을 통해 동일한 아이콘을 다양한 크기로 재사용할 수 있다.
  */
-export default function Icon({
-  name,
-  size = 20,
-}: IconProps) {
-
+export default function Icon({ name, size = 20 }: IconProps) {
   /**
    * 각 IconName과 실제 SVG 도형을 연결하는 객체
    *
@@ -52,7 +45,6 @@ export default function Icon({
    * IconName에 정의된 모든 아이콘이 구현되도록 한다.
    */
   const paths: Record<IconName, ReactNode> = {
-
     // 보안 및 검증을 나타내는 Shield 아이콘
     shield: (
       <>
@@ -60,7 +52,6 @@ export default function Icon({
         <path d="m8.5 12 2.3 2.3 4.7-4.6" />
       </>
     ),
-
 
     // Dashboard 메뉴를 나타내는 Grid 아이콘
     grid: (
@@ -72,14 +63,12 @@ export default function Icon({
       </>
     ),
 
-
     // Tool 또는 Registry 항목을 나타내는 Box 아이콘
     box: (
       <>
         <path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm-9 5 9 5 9-5M12 13v9M7.5 5.5l9 5" />
       </>
     ),
-
 
     // 실행 이력을 나타내는 History 아이콘
     history: (
@@ -88,7 +77,6 @@ export default function Icon({
       </>
     ),
 
-
     // 화면 이동 및 실행 흐름을 나타내는 Arrow 아이콘
     arrow: (
       <>
@@ -96,18 +84,11 @@ export default function Icon({
       </>
     ),
 
-
     // 검증 성공 또는 완료 상태를 나타내는 Check 아이콘
-    check: (
-      <path d="m5 12 4 4L19 6" />
-    ),
-
+    check: <path d="m5 12 4 4L19 6" />,
 
     // 검증 실패 또는 닫기 동작을 나타내는 Cross 아이콘
-    cross: (
-      <path d="m6 6 12 12M6 18 18 6" />
-    ),
-
+    cross: <path d="m6 6 12 12M6 18 18 6" />,
 
     // REVIEW 및 대기 상태를 나타내는 Clock 아이콘
     clock: (
@@ -116,7 +97,6 @@ export default function Icon({
         <path d="M12 7v5l3 2" />
       </>
     ),
-
 
     // On-chain 및 Registry 연결을 나타내는 Chain 아이콘
     chain: (
@@ -128,14 +108,12 @@ export default function Icon({
       </>
     ),
 
-
     // Dashboard 데이터를 다시 조회하는 Refresh 아이콘
     refresh: (
       <>
         <path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 14 6M4 12a8 8 0 0 0 14 6" />
       </>
     ),
-
 
     // 새로운 요청 및 주요 기능을 강조하는 Spark 아이콘
     spark: (
@@ -144,7 +122,6 @@ export default function Icon({
       </>
     ),
   };
-
 
   /* ==============================
      SVG Rendering
@@ -155,21 +132,16 @@ export default function Icon({
       // 전달받은 size를 가로/세로 크기에 동일하게 적용
       width={size}
       height={size}
-
       // 모든 아이콘이 동일한 24 × 24 좌표계를 사용
       viewBox="0 0 24 24"
-
       // 내부를 채우지 않고 선으로 아이콘 표현
       fill="none"
-
       // 부모 요소의 글자색을 아이콘 색상으로 사용
       stroke="currentColor"
-
       // 전체 아이콘의 선 스타일 통일
       strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
-
       // 아이콘은 장식 요소이므로 스크린 리더에서 제외
       aria-hidden="true"
     >

@@ -51,22 +51,22 @@
   /* ==========
      Layout
      ========== */
-     --sidebar-width: 220px;
-     --topbar-height: 76px;
-     --content-max-width: 1530px;
+  --sidebar-width: 220px;
+  --topbar-height: 76px;
+  --content-max-width: 1530px;
 
   /* ==========
      Border radius
      ========== */
-     --radius-sm: 6px;
-     --radius-md: 8px;
-     --radius-lg: 11px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
 
   /* ==========
      Animation
      ========== */
-     --transition-fast: 0.15s ease;
-     --transition-normal: 0.2s ease;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
 }
 * {
   box-sizing: border-box;
@@ -102,7 +102,7 @@ select {
 
   outline: none;
 
-  transition: 
+  transition:
     border-color var(--transition-fast),
     background var(--transition-fast);
 }
@@ -1845,7 +1845,7 @@ tbody tr:last-child td {
 }
 /* BLOCK */
 .history-panel .history-row.decision-block.selected-row td {
-  background: rgba(255, 141, 152, 0.10);
+  background: rgba(255, 141, 152, 0.1);
 }
 .history-row.decision-block.selected-row td:first-child {
   box-shadow: inset 3px 0 0 var(--red);
