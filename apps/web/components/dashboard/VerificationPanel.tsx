@@ -11,7 +11,7 @@ import { decisionDescriptions } from "@/lib/constants";
  */
 type VerificationPanelProps = {
   // 현재 실행 이력에서 선택된 Run
-  selectedRun: Run | null;
+  selectedRuns: Run[];
 
   // 현재 진행 중인 비동기 작업
   busy: string | null;
@@ -37,7 +37,7 @@ type VerificationPanelProps = {
  * Tool 실행 결과를 보여준다.
  */
 export default function VerificationPanel({
-  selectedRun,
+  selectedRuns,
   busy,
   loading,
   statusNames,
@@ -66,19 +66,21 @@ export default function VerificationPanel({
       </div>
 
       {/* 선택된 실행 기록이 있을 경우 검증 결과 표시 */}
-      {selectedRun ? (
-        <>
+      {selectedRuns.length > 0 ? (
+        <div className="verification-results">
+          {selectedRuns.map((run) => (
+            <div className="verification-result" key={run.id}>
           {/* 최종 실행 결정 요약 */}
           <div
-            className={`decision-summary ${selectedRun.decision.toLowerCase()}`}
+            className={`decision-summary ${run.decision.toLowerCase()}`}
           >
             <div className="decision-symbol">
               <Icon
                 // 실행 결정에 따라 서로 다른 상태 아이콘 표시
                 name={
-                  selectedRun.decision === "ALLOW"
+                  run.decision === "ALLOW"
                     ? "check"
-                    : selectedRun.decision === "REVIEW"
+                    : run.decision === "REVIEW"
                       ? "clock"
                       : "shield"
                 }
@@ -89,26 +91,26 @@ export default function VerificationPanel({
             <div>
               {/* 현재 Run의 실행 상태 */}
               <div className="decision-title">
-                {statusNames[selectedRun.status]}
+                {statusNames[run.status]}
               </div>
 
               {/* 검증 대상 Tool ID */}
-              <div className="decision-subtitle">{selectedRun.toolId}</div>
+              <div className="decision-subtitle">{run.toolId}</div>
 
-              <code className="decision-tool">{selectedRun.toolId}</code>
+              <code className="decision-tool">{run.toolId}</code>
             </div>
 
             {/* ALLOW / REVIEW / BLOCK Badge */}
-            <Badge decision={selectedRun.decision} />
+            <Badge decision={run.decision} />
           </div>
 
           {/* Run 식별 정보 및 요청 생성 시각 */}
           <div className="run-metadata">
             <span>
-              REQUEST ID <code>{selectedRun.id.slice(0, 12)}</code>
+              REQUEST ID <code>{run.id.slice(0, 12)}</code>
             </span>
 
-            <span>{time(selectedRun.createdAt)}</span>
+            <span>{time(run.createdAt)}</span>
           </div>
 
           {/* MCP Sentinel의 전체 신뢰 검증 흐름 */}
@@ -127,15 +129,15 @@ export default function VerificationPanel({
 
             {/* 마지막 단계는 실제 실행 결정에 따라 색상과 텍스트 변경 */}
             <span
-              className={`flow-step decision ${selectedRun.decision.toLowerCase()}`}
+              className={`flow-step decision ${run.decision.toLowerCase()}`}
             >
-              {selectedRun.decision}
+              {run.decision}
             </span>
           </div>
 
           {/* Registry, 무결성, 권한 등의 개별 검증 결과 */}
           <div className="checks">
-            {selectedRun.checks.map((check) => (
+            {run.checks.map((check) => (
               <div className="check-row" key={check.key}>
                 {/* 검증 성공 여부를 아이콘으로 표시 */}
                 <span
@@ -161,15 +163,15 @@ export default function VerificationPanel({
           </div>
 
           {/* 서버가 판단 사유를 제공한 경우에만 표시 */}
-          {selectedRun.reasons.length > 0 && (
-            <div className={`reasons ${selectedRun.decision.toLowerCase()}`}>
+          {run.reasons.length > 0 && (
+            <div className={`reasons ${run.decision.toLowerCase()}`}>
               <div className="reasons-heading">
                 {/* 최종 결정에 맞는 아이콘 사용 */}
                 <Icon
                   name={
-                    selectedRun.decision === "BLOCK"
+                    run.decision === "BLOCK"
                       ? "shield"
-                      : selectedRun.decision === "REVIEW"
+                      : run.decision === "REVIEW"
                         ? "clock"
                         : "check"
                   }
@@ -178,23 +180,23 @@ export default function VerificationPanel({
 
                 {/* 결정 유형에 따라 사유 영역 제목 변경 */}
                 <strong>
-                  {selectedRun.decision === "BLOCK"
+                  {run.decision === "BLOCK"
                     ? "차단 사유"
-                    : selectedRun.decision === "REVIEW"
+                    : run.decision === "REVIEW"
                       ? "승인 필요 사유"
                       : "검증 결과"}
                 </strong>
               </div>
 
               {/* 서버가 반환한 판단 사유 목록 */}
-              {selectedRun.reasons.map((reason, index) => (
+              {run.reasons.map((reason, index) => (
                 <p key={`${index}-${reason}`}>{reason}</p>
               ))}
             </div>
           )}
 
           {/* REVIEW 상태인 경우에만 사용자 승인 UI 표시 */}
-          {selectedRun.status === "pending_review" && (
+          {run.status === "pending_review" && (
             <div className="review-box">
               <strong>이 요청의 실행을 승인할까요?</strong>
 
@@ -207,7 +209,7 @@ export default function VerificationPanel({
               <details>
                 <summary>실행 인자 확인</summary>
 
-                <pre>{JSON.stringify(selectedRun.arguments, null, 2)}</pre>
+                <pre>{JSON.stringify(run.arguments, null, 2)}</pre>
               </details>
 
               {/* REVIEW 실행 과정:
@@ -243,7 +245,7 @@ export default function VerificationPanel({
                 <button
                   className="secondary-button"
                   disabled={busy !== null}
-                  onClick={() => void review("reject")}
+                  onClick={() => void review(run.id, "reject")}
                 >
                   {busy === "reject" ? "거절 중…" : "거절"}
                 </button>
@@ -251,7 +253,7 @@ export default function VerificationPanel({
                 <button
                   className="primary-button"
                   disabled={busy !== null}
-                  onClick={() => void review("approve")}
+                  onClick={() => void review(run.id, "approve")}
                 >
                   {busy === "approve" ? "재검증 중…" : "승인 후 실행"}
                   <Icon name="arrow" size={15} />
@@ -261,7 +263,7 @@ export default function VerificationPanel({
           )}
 
           {/* Tool 실행 결과가 존재하는 경우 응답 내용 표시 */}
-          {selectedRun.result !== undefined && (
+          {run.result !== undefined && (
             <div className="result-box">
               <div className="section-label">
                 <span>TOOL RESPONSE</span>
@@ -270,19 +272,21 @@ export default function VerificationPanel({
 
               <pre>
                 {/* 문자열은 그대로 표시하고 객체 등의 값은 보기 좋은 JSON으로 변환 */}
-                {typeof selectedRun.result === "string"
-                  ? selectedRun.result
-                  : JSON.stringify(selectedRun.result, null, 2)}
+                {typeof run.result === "string"
+                  ? run.result
+                  : JSON.stringify(run.result, null, 2)}
               </pre>
             </div>
           )}
 
           {/* 특정 Run 실행 과정에서 오류가 발생한 경우 표시 */}
-          {selectedRun.error && (
-            <div className="inline-error">{selectedRun.error}</div>
+          {run.error && (
+            <div className="inline-error">{run.error}</div>
           )}
-        </>
-      ) : (
+              </div>
+    ))}
+  </div>
+) : (
         /* 아직 실행 이력이 없을 때 표시하는 초기 상태 */
         <div className="empty-verification">
           <div className="radar">
