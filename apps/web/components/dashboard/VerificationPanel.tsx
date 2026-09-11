@@ -26,7 +26,10 @@ type VerificationPanelProps = {
   time: (value: string) => string;
 
   // REVIEW 상태의 요청을 승인하거나 거절하는 함수
-  review: (action: "approve" | "reject") => void | Promise<void>;
+  review: (
+    runId: string,
+    action: "approve" | "reject"
+  ) => void | Promise<void>;
 };
 
 /**
