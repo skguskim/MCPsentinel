@@ -93,19 +93,15 @@ export function createApiApp(
     res.json({ run });
   });
   app.post("/api/runs", async (req, res) => {
-  const created = await gateway.create(
-    RunRequestSchema.parse(req.body),
-  );
+    const created = await gateway.create(RunRequestSchema.parse(req.body));
 
-  const runs = Array.isArray(created)
-    ? created
-    : [created];
+    const runs = Array.isArray(created) ? created : [created];
 
-  res.status(201).json({
-    run: runs[runs.length - 1],
-    runs,
+    res.status(201).json({
+      run: runs[runs.length - 1],
+      runs,
+    });
   });
-});
   app.post("/api/runs/:id/approve", async (req, res) => {
     z.object({})
       .strict()

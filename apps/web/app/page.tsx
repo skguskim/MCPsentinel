@@ -149,13 +149,13 @@ export default function Dashboard() {
     sortedRuns.find((run) => run.id === selectedId) ?? sortedRuns[0];
 
   const selectedRuns =
-  activeRunIds.length > 0
-    ? activeRunIds
-        .map((id) => sortedRuns.find((run) => run.id === id))
-        .filter((run): run is Run => Boolean(run))
-    : selectedRun
-      ? [selectedRun]
-      : [];
+    activeRunIds.length > 0
+      ? activeRunIds
+          .map((id) => sortedRuns.find((run) => run.id === id))
+          .filter((run): run is Run => Boolean(run))
+      : selectedRun
+        ? [selectedRun]
+        : [];
 
   // 상단 통계 카드에 표시할 실행 상태별 개수
   const completedCount = runs.filter(
@@ -187,23 +187,20 @@ export default function Dashboard() {
   }
 
   function acceptRuns(nextRuns: Run[]) {
-  setRuns((previous) => {
-    const ids = new Set(nextRuns.map((run) => run.id));
+    setRuns((previous) => {
+      const ids = new Set(nextRuns.map((run) => run.id));
 
-    return [
-      ...nextRuns,
-      ...previous.filter((item) => !ids.has(item.id)),
-    ];
-  });
+      return [...nextRuns, ...previous.filter((item) => !ids.has(item.id))];
+    });
 
-  setActiveRunIds(nextRuns.map((run) => run.id));
+    setActiveRunIds(nextRuns.map((run) => run.id));
 
-  const lastRun = nextRuns[nextRuns.length - 1];
+    const lastRun = nextRuns[nextRuns.length - 1];
 
-  if (lastRun) {
-    setSelectedId(lastRun.id);
+    if (lastRun) {
+      setSelectedId(lastRun.id);
+    }
   }
-}
 
   /* ==============================
      Tool Execution
@@ -214,30 +211,30 @@ export default function Dashboard() {
    * Tool 선택 → 보안 검증 → 실행 판단 흐름을 시작한다.
    */
   async function submit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!prompt.trim() || busy) return;
+    if (!prompt.trim() || busy) return;
 
-  setBusy("run");
-  setError(null);
+    setBusy("run");
+    setError(null);
 
-  try {
-    const response = await api<{
-      run: Run;
-      runs?: Run[];
-    }>("/runs", {
-      prompt: prompt.trim(),
-    });
+    try {
+      const response = await api<{
+        run: Run;
+        runs?: Run[];
+      }>("/runs", {
+        prompt: prompt.trim(),
+      });
 
-    const nextRuns = response.runs ?? [response.run];
+      const nextRuns = response.runs ?? [response.run];
 
-    acceptRuns(nextRuns);
-  } catch (err) {
-    setError(errorText(err));
-  } finally {
-    setBusy(null);
+      acceptRuns(nextRuns);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(null);
+    }
   }
-}
 
   /* ==============================
      REVIEW Decision
@@ -247,10 +244,7 @@ export default function Dashboard() {
    * REVIEW 상태의 실행 요청을 사용자가 승인하거나 거절한다.
    * 처리 결과로 반환된 최신 Run 상태를 실행 이력에 반영한다.
    */
-  async function review(
-    runId: string,
-    action: "approve" | "reject",
-  ) {
+  async function review(runId: string, action: "approve" | "reject") {
     if (busy) return;
 
     setBusy(action);
@@ -260,9 +254,9 @@ export default function Dashboard() {
       const updatedRun = (
         await api<{ run: Run }>(
           `/runs/${encodeURIComponent(runId)}/${action}`,
-        {},
-      )
-    ).run;
+          {},
+        )
+      ).run;
 
       acceptRun(updatedRun);
     } catch (err) {
