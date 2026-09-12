@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  Run,
-  Tool,
-  Scenario,
-  ChatResponse,
-} from "@/types";
+import type { Run, Tool, Scenario, ChatResponse } from "@/types";
 
 import {
   useCallback,

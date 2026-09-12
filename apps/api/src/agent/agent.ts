@@ -2,10 +2,7 @@ import type OpenAI from "openai";
 
 import { ToolConnection } from "../mcp.js";
 import { getLLMClient, getLLMModel } from "./llm.js";
-import type {
-  AgentDecision,
-  ToolExecutionContext,
-} from "./types.js";
+import type { AgentDecision, ToolExecutionContext } from "./types.js";
 
 export class MCPAgent {
   constructor(private readonly connection: ToolConnection) {}
@@ -31,9 +28,7 @@ export class MCPAgent {
         (tool) => ({
           type: "function",
           name: tool.name,
-          description:
-            tool.description ||
-            `MCP Tool named ${tool.name}`,
+          description: tool.description || `MCP Tool named ${tool.name}`,
           parameters: tool.inputSchema as Record<string, unknown>,
           strict: false,
         }),
@@ -117,9 +112,7 @@ export class MCPAgent {
         parsedArguments === null ||
         Array.isArray(parsedArguments)
       ) {
-        throw new Error(
-          "LLM Tool arguments는 JSON object여야 합니다.",
-        );
+        throw new Error("LLM Tool arguments는 JSON object여야 합니다.");
       }
 
       return {
@@ -133,9 +126,7 @@ export class MCPAgent {
     }
   }
 
-  async finalizeToolResult(
-    context: ToolExecutionContext,
-  ): Promise<string> {
+  async finalizeToolResult(context: ToolExecutionContext): Promise<string> {
     const llm = getLLMClient();
 
     const response = await llm.responses.create({
@@ -160,9 +151,7 @@ export class MCPAgent {
     const content = response.output_text.trim();
 
     if (!content) {
-      throw new Error(
-        "Tool 결과에 대한 LLM 최종 응답이 비어 있습니다.",
-      );
+      throw new Error("Tool 결과에 대한 LLM 최종 응답이 비어 있습니다.");
     }
 
     return content;

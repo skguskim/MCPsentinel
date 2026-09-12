@@ -14,9 +14,7 @@ export function getLLMClient(): OpenAI {
   if (!client) {
     client = new OpenAI({
       apiKey,
-      baseURL:
-        process.env.LLM_BASE_URL ||
-        "https://openrouter.ai/api/v1",
+      baseURL: process.env.LLM_BASE_URL || "https://openrouter.ai/api/v1",
     });
   }
 

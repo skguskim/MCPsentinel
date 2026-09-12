@@ -45,18 +45,14 @@ const store = new RunStore(
 );
 const connection = new ToolConnection(baseUrl, token);
 const agent = new MCPAgent(connection);
-const gateway = new Gateway(
-  registry,
-  connection,
-  store,
-);
+const gateway = new Gateway(registry, connection, store);
 const webPort = process.env.WEB_PORT || 3000;
 const app = createApiApp(
   gateway,
   [
-  `http://localhost:${webPort}`,
-  `http://127.0.0.1:${webPort}`,
-  ...(process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : []),
+    `http://localhost:${webPort}`,
+    `http://127.0.0.1:${webPort}`,
+    ...(process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : []),
   ],
   agent,
 );

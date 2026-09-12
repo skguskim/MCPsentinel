@@ -123,10 +123,7 @@ export function createApiApp(
     const run = runs[runs.length - 1];
 
     if (!run) {
-      throw new HttpError(
-        500,
-        "실행 요청이 생성되지 않았습니다.",
-      );
+      throw new HttpError(500, "실행 요청이 생성되지 않았습니다.");
     }
 
     if (run.status === "completed") {
@@ -151,7 +148,7 @@ export function createApiApp(
       run,
       runs,
     });
-    });
+  });
   app.get("/api/runs", (_req, res) => res.json({ runs: gateway.store.list() }));
   app.get("/api/runs/:id", (req, res) => {
     const run = gateway.store.get(req.params.id);
@@ -185,10 +182,7 @@ export function createApiApp(
   });
   app.post("/api/chat/runs/:id/approve", async (req, res) => {
     if (!agent) {
-      throw new HttpError(
-        503,
-        "AI Agent가 활성화되지 않았습니다.",
-      );
+      throw new HttpError(503, "AI Agent가 활성화되지 않았습니다.");
     }
 
     z.object({})
@@ -199,10 +193,7 @@ export function createApiApp(
     const existingRun = gateway.store.get(req.params.id);
 
     if (!existingRun) {
-      throw new HttpError(
-        404,
-        "실행 요청을 찾을 수 없습니다.",
-      );
+      throw new HttpError(404, "실행 요청을 찾을 수 없습니다.");
     }
 
     // Sentinel 재검증 + 실제 MCP Tool 실행
@@ -219,15 +210,10 @@ export function createApiApp(
     // 실행된 Tool의 이름 확인
     const manifests = await gateway.connection.manifests();
 
-    const manifest = manifests.find(
-      (item) => item.toolId === run.toolId,
-    );
+    const manifest = manifests.find((item) => item.toolId === run.toolId);
 
     if (!manifest) {
-      throw new HttpError(
-        500,
-        "실행된 Tool의 Manifest를 찾을 수 없습니다.",
-      );
+      throw new HttpError(500, "실행된 Tool의 Manifest를 찾을 수 없습니다.");
     }
 
     // Tool 실행 결과 → LLM → 최종 자연어 응답
