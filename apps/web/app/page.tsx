@@ -67,6 +67,7 @@ export default function Dashboard() {
 
   // 실행 이력 중 현재 상세 화면에 표시할 Run ID
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeRunIds, setActiveRunIds] = useState<string[]>([]);
 
   /* ==============================
      Dashboard Data
@@ -147,6 +148,15 @@ export default function Dashboard() {
   const selectedRun =
     sortedRuns.find((run) => run.id === selectedId) ?? sortedRuns[0];
 
+  const selectedRuns =
+    activeRunIds.length > 0
+      ? activeRunIds
+          .map((id) => sortedRuns.find((run) => run.id === id))
+          .filter((run): run is Run => Boolean(run))
+      : selectedRun
+        ? [selectedRun]
+        : [];
+
   // 상단 통계 카드에 표시할 실행 상태별 개수
   const completedCount = runs.filter(
     (run) => run.status === "completed",
@@ -176,6 +186,22 @@ export default function Dashboard() {
     setSelectedId(run.id);
   }
 
+  function acceptRuns(nextRuns: Run[]) {
+    setRuns((previous) => {
+      const ids = new Set(nextRuns.map((run) => run.id));
+
+      return [...nextRuns, ...previous.filter((item) => !ids.has(item.id))];
+    });
+
+    setActiveRunIds(nextRuns.map((run) => run.id));
+
+    const lastRun = nextRuns[nextRuns.length - 1];
+
+    if (lastRun) {
+      setSelectedId(lastRun.id);
+    }
+  }
+
   /* ==============================
      Tool Execution
      ============================== */
@@ -187,16 +213,22 @@ export default function Dashboard() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // 빈 요청 또는 이미 다른 작업이 진행 중이면 실행하지 않음
     if (!prompt.trim() || busy) return;
 
     setBusy("run");
     setError(null);
 
     try {
-      acceptRun(
-        (await api<{ run: Run }>("/runs", { prompt: prompt.trim() })).run,
-      );
+      const response = await api<{
+        run: Run;
+        runs?: Run[];
+      }>("/runs", {
+        prompt: prompt.trim(),
+      });
+
+      const nextRuns = response.runs ?? [response.run];
+
+      acceptRuns(nextRuns);
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -212,21 +244,21 @@ export default function Dashboard() {
    * REVIEW 상태의 실행 요청을 사용자가 승인하거나 거절한다.
    * 처리 결과로 반환된 최신 Run 상태를 실행 이력에 반영한다.
    */
-  async function review(action: "approve" | "reject") {
-    if (!selectedRun || busy) return;
+  async function review(runId: string, action: "approve" | "reject") {
+    if (busy) return;
 
     setBusy(action);
     setError(null);
 
     try {
-      acceptRun(
-        (
-          await api<{ run: Run }>(
-            `/runs/${encodeURIComponent(selectedRun.id)}/${action}`,
-            {},
-          )
-        ).run,
-      );
+      const updatedRun = (
+        await api<{ run: Run }>(
+          `/runs/${encodeURIComponent(runId)}/${action}`,
+          {},
+        )
+      ).run;
+
+      acceptRun(updatedRun);
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -353,7 +385,7 @@ export default function Dashboard() {
             />
 
             <VerificationPanel
-              selectedRun={selectedRun}
+              selectedRuns={selectedRuns}
               busy={busy}
               loading={loading}
               statusNames={statusNames}

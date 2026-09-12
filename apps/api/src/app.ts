@@ -92,11 +92,16 @@ export function createApiApp(
     if (!run) throw new HttpError(404, "실행 요청을 찾을 수 없습니다.");
     res.json({ run });
   });
-  app.post("/api/runs", async (req, res) =>
-    res
-      .status(201)
-      .json({ run: await gateway.create(RunRequestSchema.parse(req.body)) }),
-  );
+  app.post("/api/runs", async (req, res) => {
+    const created = await gateway.create(RunRequestSchema.parse(req.body));
+
+    const runs = Array.isArray(created) ? created : [created];
+
+    res.status(201).json({
+      run: runs[runs.length - 1],
+      runs,
+    });
+  });
   app.post("/api/runs/:id/approve", async (req, res) => {
     z.object({})
       .strict()
