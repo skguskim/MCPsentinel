@@ -1,6 +1,11 @@
 "use client";
 
-import type { Run, Tool, Scenario } from "@/types";
+import type {
+  Run,
+  Tool,
+  Scenario,
+  ChatResponse,
+} from "@/types";
 
 import {
   useCallback,
@@ -58,6 +63,8 @@ export default function Dashboard() {
 
   // API 요청 또는 서버 연결 과정에서 발생한 오류 메시지
   const [error, setError] = useState<string | null>(null);
+
+  const [agentAnswer, setAgentAnswer] = useState<string | null>(null);
 
   // 사용자가 입력한 자연어 Tool 실행 요청
   const [prompt, setPrompt] = useState("달러 환율 알려줘");
@@ -194,9 +201,17 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      acceptRun(
-        (await api<{ run: Run }>("/runs", { prompt: prompt.trim() })).run,
-      );
+      const response = await api<ChatResponse>("/chat", {
+        prompt: prompt.trim(),
+      });
+
+      if (response.type === "answer") {
+        setAgentAnswer(response.answer);
+        return;
+      }
+
+      acceptRun(response.run);
+      setAgentAnswer(response.answer ?? null);
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -219,14 +234,27 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      acceptRun(
-        (
-          await api<{ run: Run }>(
-            `/runs/${encodeURIComponent(selectedRun.id)}/${action}`,
-            {},
-          )
-        ).run,
-      );
+      if (action === "approve") {
+        const response = await api<ChatResponse>(
+          `/chat/runs/${encodeURIComponent(selectedRun.id)}/approve`,
+          {},
+        );
+
+        if (response.type !== "run") {
+          throw new Error("승인 결과 형식이 올바르지 않습니다.");
+        }
+
+        acceptRun(response.run);
+        setAgentAnswer(response.answer ?? null);
+      } else {
+        const response = await api<{ run: Run }>(
+          `/runs/${encodeURIComponent(selectedRun.id)}/reject`,
+          {},
+        );
+
+        acceptRun(response.run);
+        setAgentAnswer(null);
+      }
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -309,8 +337,8 @@ export default function Dashboard() {
               {registryMode === "onchain"
                 ? "온체인 Registry를 조회합니다."
                 : "데모 모드에서는 로컬 Registry로 검증 흐름을 체험합니다."}{" "}
-              기본 요청 해석은 키워드 기반 데모 라우팅이며, 환율은 샘플
-              데이터입니다.
+              AI Agent가 MCP tools/list를 기반으로 Tool 사용 여부를 판단합니다.
+              환율 Tool은 데모용 샘플 데이터를 사용합니다.
             </span>
           </div>
 
@@ -326,6 +354,17 @@ export default function Dashboard() {
               >
                 <Icon name="cross" size={16} />
               </button>
+            </div>
+          )}
+
+          {agentAnswer && (
+            <div className="agent-answer" aria-live="polite">
+              <div className="agent-answer-heading">
+                <Icon name="spark" size={16} />
+                <strong>AI Agent</strong>
+              </div>
+
+              <p>{agentAnswer}</p>
             </div>
           )}
 
