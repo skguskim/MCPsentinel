@@ -120,3 +120,14 @@ export type IconName =
   | "chain"
   | "refresh"
   | "spark";
+
+export type ChatResponse =
+  | {
+      type: "answer";
+      answer: string;
+    }
+  | {
+      type: "run";
+      run: Run;
+      answer?: string;
+    };

@@ -11,6 +11,7 @@ import { Gateway } from "./gateway.js";
 import { ToolConnection } from "./mcp.js";
 import { DemoRegistry, OnchainRegistry } from "./registry.js";
 import { RunStore } from "./store.js";
+import { MCPAgent } from "./agent/agent.js";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 loadProjectEnv();
@@ -42,17 +43,19 @@ if (registry instanceof OnchainRegistry) await registry.validateConnection();
 const store = new RunStore(
   resolve(process.env.DATA_DIR || resolve(root, "data"), "sentinel.sqlite"),
 );
-const gateway = new Gateway(
-  registry,
-  new ToolConnection(baseUrl, token),
-  store,
-);
+const connection = new ToolConnection(baseUrl, token);
+const agent = new MCPAgent(connection);
+const gateway = new Gateway(registry, connection, store);
 const webPort = process.env.WEB_PORT || 3000;
-const app = createApiApp(gateway, [
-  `http://localhost:${webPort}`,
-  `http://127.0.0.1:${webPort}`,
-  ...(process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : []),
-]);
+const app = createApiApp(
+  gateway,
+  [
+    `http://localhost:${webPort}`,
+    `http://127.0.0.1:${webPort}`,
+    ...(process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : []),
+  ],
+  agent,
+);
 const server = app.listen(port, "127.0.0.1", () =>
   console.log(
     `Sentinel API http://127.0.0.1:${port} (Registry: ${mode}, router: demo)`,

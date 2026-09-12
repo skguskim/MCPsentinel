@@ -156,6 +156,46 @@ LLM 담당자는 아래처럼 Tool과 인자를 확정해서 전달할 수 있�
 }
 ```
 
+## AI Agent / LLM
+
+MCPsentinel은 LLM이 사용자의 자연어 요청을 분석하고,
+MCP Server에서 제공되는 Tool 목록을 기반으로 필요한 Tool을 선택합니다.
+
+LLM은 Tool을 직접 실행하지 않습니다.
+
+실제 Tool 실행은 Gateway와 Sentinel의 검증을 거치며,
+검증 결과에 따라 `ALLOW`, `REVIEW`, `BLOCK`으로 처리됩니다.
+
+### 동작 흐름
+
+```text
+사용자 요청
+   ↓
+MCP tools/list
+   ↓
+LLM 판단
+   ↓
+├─ Tool 필요 없음
+│    ↓
+│  LLM 직접 응답
+│
+└─ Tool 필요
+     ↓
+  Tool + arguments
+     ↓
+  Gateway
+     ↓
+  Sentinel 검증
+     ↓
+  ALLOW / REVIEW / BLOCK
+     ↓
+  승인된 MCP Tool 실행
+     ↓
+  Tool 결과
+     ↓
+  LLM 최종 응답
+```
+
 ## 검증
 
 ```sh
