@@ -125,6 +125,16 @@ export default function RequestPanel({
           >
             보고서 업데이트 <Icon name="arrow" size={12} />
           </button>
+
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() =>
+              setPrompt("공식 환율 데이터를 가져와 보고서 업데이트 해줘")
+            }
+          >
+            환율 조회 + 보고서 업데이트 <Icon name="arrow" size={12} />
+          </button>
         </div>
 
         {/* Demo Registry에서 검증 상황을 선택하는 영역 */}

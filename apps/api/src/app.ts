@@ -113,13 +113,22 @@ export function createApiApp(
     }
 
     // Tool이 필요한 경우
-    const run = await gateway.create({
+    const created = await gateway.create({
       prompt,
       toolId: decision.toolId,
       arguments: decision.arguments,
     });
 
-    // 바로 ALLOW되어 Tool 실행까지 끝난 경우
+    const runs = Array.isArray(created) ? created : [created];
+    const run = runs[runs.length - 1];
+
+    if (!run) {
+      throw new HttpError(
+        500,
+        "실행 요청이 생성되지 않았습니다.",
+      );
+    }
+
     if (run.status === "completed") {
       const answer = await agent.finalizeToolResult({
         userPrompt: prompt,
@@ -131,28 +140,34 @@ export function createApiApp(
       res.status(201).json({
         type: "run",
         run,
+        runs,
         answer,
       });
       return;
     }
 
-    // REVIEW 또는 BLOCK
     res.status(201).json({
       type: "run",
       run,
+      runs,
     });
-  });
+    });
   app.get("/api/runs", (_req, res) => res.json({ runs: gateway.store.list() }));
   app.get("/api/runs/:id", (req, res) => {
     const run = gateway.store.get(req.params.id);
     if (!run) throw new HttpError(404, "실행 요청을 찾을 수 없습니다.");
     res.json({ run });
   });
-  app.post("/api/runs", async (req, res) =>
-    res
-      .status(201)
-      .json({ run: await gateway.create(RunRequestSchema.parse(req.body)) }),
-  );
+  app.post("/api/runs", async (req, res) => {
+    const created = await gateway.create(RunRequestSchema.parse(req.body));
+
+    const runs = Array.isArray(created) ? created : [created];
+
+    res.status(201).json({
+      run: runs[runs.length - 1],
+      runs,
+    });
+  });
   app.post("/api/runs/:id/approve", async (req, res) => {
     z.object({})
       .strict()

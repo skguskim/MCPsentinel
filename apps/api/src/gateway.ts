@@ -107,7 +107,7 @@ export class Gateway {
 
   private async createExchangeReportWorkflow(
     input: RunRequest,
-  ): Promise<StoredRun> {
+  ): Promise<StoredRun[]> {
     const prompt = input.prompt || "";
 
     const exchangeAt = new Date().toISOString();
@@ -131,7 +131,7 @@ export class Gateway {
     const evaluatedExchange = await this.evaluate(exchangeRun, false);
 
     if (evaluatedExchange.status !== "completed") {
-      return evaluatedExchange;
+      return [evaluatedExchange];
     }
 
     const exchangeResult = JSON.stringify(evaluatedExchange.result, null, 2);
@@ -154,7 +154,9 @@ export class Gateway {
       updatedAt: reportAt,
     };
 
-    return this.evaluate(reportRun, false);
+    const evaluatedReport = await this.evaluate(reportRun, false);
+
+    return [evaluatedExchange, evaluatedReport];
   }
 
   approve(id: string) {
