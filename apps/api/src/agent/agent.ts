@@ -1,11 +1,7 @@
 import type OpenAI from "openai";
 
 import { ToolConnection } from "../mcp.js";
-import {
-  getLLMClient,
-  getLLMModel,
-  hasLLMApiKey,
-} from "./llm.js";
+import { getLLMClient, getLLMModel, hasLLMApiKey } from "./llm.js";
 import type { AgentDecision, ToolExecutionContext } from "./types.js";
 
 export class MCPAgent {
@@ -191,7 +187,7 @@ export class MCPAgent {
         `결과: ${JSON.stringify(context.result)}`,
       ].join("\n");
     }
-    
+
     const llm = getLLMClient();
 
     const response = await llm.responses.create({
