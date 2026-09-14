@@ -56,9 +56,11 @@ const app = createApiApp(
   ],
   agent,
 );
+const routingMode = process.env.LLM_API_KEY ? "llm" : "demo";
+
 const server = app.listen(port, "127.0.0.1", () =>
   console.log(
-    `Sentinel API http://127.0.0.1:${port} (Registry: ${mode}, router: demo)`,
+    `Sentinel API http://127.0.0.1:${port} (Registry: ${mode}, router: ${routingMode})`,
   ),
 );
 for (const signal of ["SIGINT", "SIGTERM"] as const)

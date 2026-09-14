@@ -2,13 +2,15 @@ import OpenAI from "openai";
 
 let client: OpenAI | undefined;
 
+export function hasLLMApiKey(): boolean {
+  return Boolean(process.env.LLM_API_KEY?.trim());
+}
+
 export function getLLMClient(): OpenAI {
-  const apiKey = process.env.LLM_API_KEY;
+  const apiKey = process.env.LLM_API_KEY?.trim();
 
   if (!apiKey) {
-    throw new Error(
-      "LLM_API_KEY가 설정되지 않았습니다. 루트 .env 파일을 확인해주세요.",
-    );
+    throw new Error("LLM_API_KEY가 설정되지 않았습니다.");
   }
 
   if (!client) {

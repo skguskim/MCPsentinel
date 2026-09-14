@@ -62,7 +62,7 @@ export function createApiApp(
     res.json({
       status: "ok",
       registryMode: gateway.registry.mode,
-      routingMode: "demo",
+      routingMode: process.env.LLM_API_KEY ? "llm" : "demo",
       scenario:
         gateway.registry instanceof DemoRegistry
           ? gateway.registry.scenario
