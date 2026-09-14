@@ -1,7 +1,11 @@
 import type OpenAI from "openai";
 
 import { ToolConnection } from "../mcp.js";
-import { getLLMClient, getLLMModel } from "./llm.js";
+import {
+  getLLMClient,
+  getLLMModel,
+  hasLLMApiKey,
+} from "./llm.js";
 import type { AgentDecision, ToolExecutionContext } from "./types.js";
 
 export class MCPAgent {
@@ -33,6 +37,58 @@ export class MCPAgent {
           strict: false,
         }),
       );
+
+      if (!hasLLMApiKey()) {
+        console.log("[Agent] LLM_API_KEY 없음 → Demo Agent Mode");
+
+        // 보고서 업데이트
+        if (/보고서|report/i.test(prompt)) {
+          const manifest = manifestByName.get("update_report");
+
+          if (manifest) {
+            return {
+              type: "tool_call",
+              toolId: manifest.toolId,
+              toolName: "update_report",
+              arguments: {
+                title: "이번 주 보고서",
+                content: prompt,
+              },
+            };
+          }
+        }
+
+        // 환율 조회
+        if (/환율|달러|exchange|usd|eur|jpy|유로|엔화/i.test(prompt)) {
+          const manifest = manifestByName.get("exchange_rate");
+
+          if (manifest) {
+            let base = "USD";
+
+            if (/eur|유로/i.test(prompt)) {
+              base = "EUR";
+            } else if (/jpy|엔화/i.test(prompt)) {
+              base = "JPY";
+            }
+
+            return {
+              type: "tool_call",
+              toolId: manifest.toolId,
+              toolName: "exchange_rate",
+              arguments: {
+                base,
+                quote: "KRW",
+              },
+            };
+          }
+        }
+
+        return {
+          type: "answer",
+          content:
+            "현재 Demo Agent Mode입니다. 환율 조회 또는 보고서 업데이트 요청을 입력해주세요.",
+        };
+      }
 
       const llm = getLLMClient();
 
@@ -127,6 +183,15 @@ export class MCPAgent {
   }
 
   async finalizeToolResult(context: ToolExecutionContext): Promise<string> {
+    if (!hasLLMApiKey()) {
+      console.log("[Agent] Demo Mode → Tool 결과 직접 반환");
+
+      return [
+        `[Demo Mode] ${context.toolName} 실행이 완료되었습니다.`,
+        `결과: ${JSON.stringify(context.result)}`,
+      ].join("\n");
+    }
+    
     const llm = getLLMClient();
 
     const response = await llm.responses.create({
